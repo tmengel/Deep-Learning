@@ -144,7 +144,6 @@ class Neuron:
     #Calculate the output of the neuron should save the input and output for back-propagation.   
     def calculate(self,input):
         print('calculate',len(input),input)
-        # adding the bias as an "input"
         self.inputs = input
         self.nets = np.dot(self.weights, self.inputs)
         self.outputs = self.activation.f(self.nets)
@@ -197,8 +196,9 @@ class FullyConnected:
     
     def __init__(self, neuron_num, activation, input_num, learning_rate=0.1, weights=None):
         print('fully connected constructor') 
-        self.weights = weights if weights is not None else np.random.rand(neuron_num,input_num+1) #if weights is not specified, initialize the weights randomly. 
-        self.neurons = [Neuron(input_num, activation, learning_rate, self.weights[i,:]) for i in range(neuron_num)] #create a list of neurons with the correct number of inputs and weights
+        self.weights = weights if weights is not None else np.random.rand(neuron_num,input_num+1) #if weights is not specified, initialize the weights randomly.
+
+        self.neurons = [Neuron(input_num, activation, learning_rate, self.weights[:,i]) for i in range(neuron_num)] #create a list of neurons with the correct number of inputs and weights
                 
     #calcualte the output of all the neurons in the layer and return a vector with those values (go through the neurons and call the calcualte() method)      
     def calculate(self, input):
@@ -256,6 +256,7 @@ class NeuralNetwork:
     
     
     def __init__(self, num_of_layers, num_of_neurons, input_size, activation, loss, learning_rate=0.1, weights=None):
+        print('neural network constructor')
        
         # check that the number of neurons is the correct length
         if len(num_of_neurons) != num_of_layers:
@@ -263,18 +264,19 @@ class NeuralNetwork:
 
         self.architecture = [input_size , *num_of_neurons , 1] # add the input size and output size to the architecture
         # check that the weights are the correct shape
-        for i in range(len(self.architecture)-1):
-            if self.weights[i].shape != (self.architecture[i],self.architecture[i+1]):
-                raise ValueError("Weights must be a vector of length num_of_layers")
+        # for i in range(len(self.architecture)-1):
+        #     if weights[i].shape != (self.architecture[i],self.architecture[i+1]):
+        #         raise ValueError("Weights must be a vector of length num_of_layers")
             
-        self.weights = weights if weights is not None else np.array([np.random.rand(self.architecture[i],self.architecture[i+1]) for i in range(len(self.architecture)-1)])
-        self.network = [FullyConnected(self.architecture[i+1],self.architecture[i],activation,learning_rate,self.weights[i]) for i in range(len(self.architecture)-1)]
+        # Setting random weights based on the architecture of the network
+        # extra weight added to account for the bias
+        self.weights = weights if weights is not None else np.array([np.random.rand(self.architecture[i]+1,self.architecture[i+1]) for i in range(len(self.architecture)-1)],dtype=object)
+        self.network = [FullyConnected(self.architecture[i+1],activation[i],self.architecture[i],learning_rate,self.weights[i]) for i in range(len(self.architecture)-1)]
         # Get the loss function from the Loss class
         self.loss = Loss.get(loss)
         
         #Given an input, calculate the output (using the layers calculate() method)
         def calculate(self,input):
-            print('constructor')
             # set the input
             self.inputs = input
             # go through the layers and calculate the output, setting the output of one layer to the input of the next
@@ -287,7 +289,7 @@ class NeuralNetwork:
             
         #Given a predicted output and ground truth output simply return the loss (depending on the loss function)
         def calculateloss(self,yp,y):
-            print('calculate')
+            print('calculate loss')
             return self.loss.loss(yp,y)
         
         #Given a predicted output and ground truth output simply return the derivative of the loss (depending on the loss function)        
