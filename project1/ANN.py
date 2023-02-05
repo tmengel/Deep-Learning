@@ -220,10 +220,42 @@ class FullyConnected:
         return self.deltaw
 
 ############################################
-    
-class NeuralNetwork:
 
-   def __init__(self, num_of_layers, num_of_neurons, input_size, activation, loss, learning_rate=0.1, weights=None):
+   
+class NeuralNetwork:
+    ''''
+    Class manages the layers of the neural network, initializes the layers and calculates the output of the network
+    '''
+    # Network properties and setters
+    @property
+    def weights(self): return self._weights
+    @property
+    def inputs(self): return self._inputs
+    @property
+    def outputs(self): return self._outputs
+    @property
+    def network(self): return self._network
+    @property
+    def loss(self): return self._loss
+    @property
+    def dloss(self): return self._dloss
+    
+    
+    @weights.setter
+    def weights(self, x): self._weights = x
+    @inputs.setter
+    def inputs(self, x): self._inputs = x
+    @outputs.setter
+    def outputs(self, x): self._outputs = x
+    @network.setter
+    def network(self, x): self._network = x
+    @loss.setter
+    def loss(self, x): self._loss = x
+    @dloss.setter
+    def dloss(self, x): self._dloss = x
+    
+    
+    def __init__(self, num_of_layers, num_of_neurons, input_size, activation, loss, learning_rate=0.1, weights=None):
        
         # check that the number of neurons is the correct length
         if len(num_of_neurons) != num_of_layers:
@@ -236,25 +268,44 @@ class NeuralNetwork:
                 raise ValueError("Weights must be a vector of length num_of_layers")
             
         self.weights = weights if weights is not None else np.array([np.random.rand(self.architecture[i],self.architecture[i+1]) for i in range(len(self.architecture)-1)])
-        self.Network = [FullyConnected(self.architecture[i+1],self.architecture[i],activation,learning_rate,self.weights[i]) for i in range(len(self.architecture)-1)]
+        self.network = [FullyConnected(self.architecture[i+1],self.architecture[i],activation,learning_rate,self.weights[i]) for i in range(len(self.architecture)-1)]
+        # Get the loss function from the Loss class
         self.loss = Loss.get(loss)
-        
-        
         
         #Given an input, calculate the output (using the layers calculate() method)
         def calculate(self,input):
             print('constructor')
+            # set the input
+            self.inputs = input
+            # go through the layers and calculate the output, setting the output of one layer to the input of the next
+            # final output should be stored in self.outputs
+            for layer in self.network:
+                self.outputs = layer.calculate(input)
+                input = self.outputs
+            # return the output
+            return self.outputs
             
         #Given a predicted output and ground truth output simply return the loss (depending on the loss function)
         def calculateloss(self,yp,y):
             print('calculate')
+            return self.loss.loss(yp,y)
         
         #Given a predicted output and ground truth output simply return the derivative of the loss (depending on the loss function)        
         def lossderiv(self,yp,y):
             print('lossderiv')
+            return self.loss.derivatderivativeive(yp,y)
         
         #Given a single input and desired output preform one step of backpropagation (including a forward pass, getting the derivative of the loss, and then calling calcwdeltas for layers with the right values         
         def train(self,x,y):
+            # feed forward
+            self.outputs = self.calculate(x)
+            # calculate the derivative of the loss
+            self.dloss = self.lossderiv(self.outputs,y)
+            
+            # TODO: backpropagate
+            # backpropagate
+            
+            
             print('train')
             
             
