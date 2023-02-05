@@ -106,6 +106,8 @@ class Neuron:
     def delta(self): return self._delta
     @property
     def dW(self): return self._dW
+    @property
+    def input_dim(self): return self._input_dim
     
     @weights.setter
     def weights(self, x): self._weights = x
@@ -119,6 +121,8 @@ class Neuron:
     def delta(self, x): self._delta = x
     @dW.setter
     def dW(self, x): self._dW = x
+    # @input_dim.setter
+    # def input_dim(self, x): self._input_dim = x
         
     def __init__(self, input_dim, activation, learning_rate=0.1, weights=None): 
         self.learning_rate = learning_rate
@@ -127,6 +131,7 @@ class Neuron:
         if self.weights.shape != (input_dim+1,): 
             raise ValueError("Weights must be a vector of length input_dim")
         
+        self._input_dim = input_dim
         # check if activation a string or an Activation object
         self.activation = activation if isinstance(activation, Activation) else Activation.get(activation)
     
@@ -138,9 +143,8 @@ class Neuron:
     
     #Calculate the output of the neuron should save the input and output for back-propagation.   
     def calculate(self,input):
-        print('calculate')
+        print('calculate',len(input),input)
         # adding the bias as an "input"
-        input.append(1)
         self.inputs = input
         self.nets = np.dot(self.weights, self.inputs)
         self.outputs = self.activation.f(self.nets)
@@ -192,20 +196,21 @@ class FullyConnected:
  
     
     def __init__(self, neuron_num, activation, input_num, learning_rate=0.1, weights=None):
-        print('constructor') 
-        self.weights = weights if weights is not None else np.random.rand(neuron_num,input_num) #if weights is not specified, initialize the weights randomly. 
+        print('fully connected constructor') 
+        self.weights = weights if weights is not None else np.random.rand(neuron_num,input_num+1) #if weights is not specified, initialize the weights randomly. 
         self.neurons = [Neuron(input_num, activation, learning_rate, self.weights[i,:]) for i in range(neuron_num)] #create a list of neurons with the correct number of inputs and weights
                 
     #calcualte the output of all the neurons in the layer and return a vector with those values (go through the neurons and call the calcualte() method)      
     def calculate(self, input):
-        print('calculate') 
+        print('fully connected calculate') 
+        input.append(1)
         self.inputs = input 
         self.outputs = np.array([neuron.calculate(input) for neuron in self.neurons])        
         return self.outputs
     
-    #given the next layer's w*delta, should run through the neurons calling calcpartialderivative() for each (with the correct value), sum up its ownw*delta, and then update the wieghts (using the updateweight() method). I should return the sum of w*delta.          
+    #given the next layer's w*delta, should run through the neurons calling calcpartialderivative() for each (with the correct value), sum up its own w*delta, and then update the weights (using the updateweight() method). I should return the sum of w*delta.          
     def calcwdeltas(self, wtimesdelta):
-        print('calcwdeltas') 
+        print('fully connected calcwdeltas') 
         # go through the neurons and call calcpartialderivative() for each
         self.deltaw  = np.zeros(self.input.shape)
         for neuron in self.neurons:
