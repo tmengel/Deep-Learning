@@ -122,9 +122,9 @@ class Neuron:
         
     def __init__(self, input_dim, activation, learning_rate=0.1, weights=None): 
         self.learning_rate = learning_rate
-        self.weights = weights if weights is not None else np.random.rand(input_dim) # if weights is not specified, initialize the weights randomly
+        self.weights = weights if weights is not None else np.random.rand(input_dim+1) # if weights is not specified, initialize the weights randomly.. added weight to act as the bias
         # check that the weights are the correct shape
-        if self.weights.shape != (input_dim,): 
+        if self.weights.shape != (input_dim+1,): 
             raise ValueError("Weights must be a vector of length input_dim")
         
         # check if activation a string or an Activation object
@@ -139,10 +139,12 @@ class Neuron:
     #Calculate the output of the neuron should save the input and output for back-propagation.   
     def calculate(self,input):
         print('calculate')
+        # adding the bias as an "input"
+        input.append(1)
         self.inputs = input
         self.nets = np.dot(self.weights, self.inputs)
         self.outputs = self.activation.f(self.nets)
-        return self.output
+        return self.outputs
         
     #This method returns the derivative of the activation function with respect to the net   
     def activationderivative(self):
