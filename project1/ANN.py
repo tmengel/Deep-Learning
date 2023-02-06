@@ -129,7 +129,7 @@ class Neuron:
         self.weights = weights if weights is not None else np.random.rand(input_dim+1) # if weights is not specified, initialize the weights randomly.. added weight to act as the bias
         # check that the weights are the correct shape
         if self.weights.shape != (input_dim+1,): 
-            raise ValueError("Weights must be a vector of length input_dim")
+            raise ValueError("Weights must be a vector of length input_dim", self.weights.shape,input_dim+1)
         
         self._input_dim = input_dim
         # check if activation a string or an Activation object
@@ -255,7 +255,7 @@ class NeuralNetwork:
     def dloss(self, x): self._dloss = x
     
     
-    def __init__(self, num_of_layers, num_of_neurons, input_size, activation, loss, learning_rate=0.1, weights=None):
+    def __init__(self, num_of_layers, num_of_neurons, input_size, activation, loss, output_size=1, learning_rate=0.1, weights=None):
         print('neural network constructor')
         self._activations = activation
         self._learning_rate = learning_rate
@@ -263,7 +263,7 @@ class NeuralNetwork:
         if len(num_of_neurons) != num_of_layers:
             raise ValueError("num_of_neurons must be a vector of length num_of_layers")
 
-        self.architecture = [input_size , *num_of_neurons , 1] # add the input size and output size to the architecture
+        self.architecture = [input_size , *num_of_neurons , output_size] # add the input size and output size to the architecture
         # check that the weights are the correct shape
         # for i in range(len(self.architecture)-1):
         #     if weights[i].shape != (self.architecture[i],self.architecture[i+1]):
@@ -318,17 +318,23 @@ class NeuralNetwork:
             
             
 if __name__=="__main__":
-    if (len(sys.argv)<2):
+    learningRate = sys.argv[1]
+    print('Using a learning rate of',learningRate)
+    if (len(sys.argv)<3):
         print('a good place to test different parts of your code')
-        
-    elif (sys.argv[1]=='example'):
+    
+    elif (sys.argv[2]=='example'):
         print('run example from class (single step)')
         w=np.array([[[.15,.2,.35],[.25,.3,.35]],[[.4,.45,.6],[.5,.55,.6]]])
-        x==np.array([0.05,0.1])
-        np.array([0.01,0.99])
+        x =np.array([0.05,0.1])
+        y = np.array([0.01,0.99])
+        print(w)
+        example = NeuralNetwork(1,[2],len(x),["logistic"],"mse",len(y),learningRate,w)
+        example.train(x,y)
+        print(example.weights)
         
-    elif(sys.argv[1]=='and'):
+    elif(sys.argv[2]=='and'):
         print('learn and')
         
-    elif(sys.argv[1]=='xor'):
+    elif(sys.argv[2]=='xor'):
         print('learn xor')
