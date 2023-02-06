@@ -64,7 +64,7 @@ class Loss:
     # Predefined loss functions are mean squared error and binary cross entropy
     @staticmethod
     def mse(): # static method to return a mean squared error loss function
-        return Loss(lambda y, yhat: np.mean((yhat- y )**2), lambda y, yhat: 2*(yhat - y), "mse")
+        return Loss(lambda y, yhat: np.mean(0.5*(yhat- y )**2), lambda y, yhat: -1*(yhat - y), "mse")
     @staticmethod
     def bce(): # static method to return a binary cross entropy loss function
         return Loss(lambda y, yhat: -np.mean(y*np.log(yhat) + (1-y)*np.log(1-yhat)), lambda y, yhat: (yhat - y)/(yhat*(1-yhat)), "bce")
@@ -143,7 +143,7 @@ class Neuron:
     
     #Calculate the output of the neuron should save the input and output for back-propagation.   
     def calculate(self,input):
-        print('calculate',len(input),input)
+        print('calculate')
         self.inputs = input
         self.nets = np.dot(self.weights, self.inputs)
         self.outputs = self.activation.f(self.nets)
@@ -203,18 +203,18 @@ class FullyConnected:
     #calcualte the output of all the neurons in the layer and return a vector with those values (go through the neurons and call the calcualte() method)      
     def calculate(self, input):
         print('fully connected calculate') 
-        input.append(1)
+        input = np.append(input,1)
         self.inputs = input 
         self.outputs = np.array([neuron.calculate(input) for neuron in self.neurons])        
         return self.outputs
     
     #given the next layer's w*delta, should run through the neurons calling calcpartialderivative() for each (with the correct value), sum up its own w*delta, and then update the weights (using the updateweight() method). I should return the sum of w*delta.          
-    def calcwdeltas(self, wtimesdelta):
+    def calcwdeltas(self, dloss):
         print('fully connected calcwdeltas') 
         # go through the neurons and call calcpartialderivative() for each
-        self.deltaw  = np.zeros(self.input.shape)
+        self.deltaw  = np.zeros((1,len(self.weights)))
         for neuron in self.neurons:
-            self.deltaw += neuron.calcpartialderivative(wtimesdelta)
+            self.deltaw += neuron.calcpartialderivative(dloss)
             neuron.updateweight()
         # update the weights
         return self.deltaw
@@ -257,7 +257,8 @@ class NeuralNetwork:
     
     def __init__(self, num_of_layers, num_of_neurons, input_size, activation, loss, learning_rate=0.1, weights=None):
         print('neural network constructor')
-       
+        self._activations = activation
+        self._learning_rate = learning_rate
         # check that the number of neurons is the correct length
         if len(num_of_neurons) != num_of_layers:
             raise ValueError("num_of_neurons must be a vector of length num_of_layers")
@@ -275,40 +276,45 @@ class NeuralNetwork:
         # Get the loss function from the Loss class
         self.loss = Loss.get(loss)
         
-        #Given an input, calculate the output (using the layers calculate() method)
-        def calculate(self,input):
-            # set the input
-            self.inputs = input
-            # go through the layers and calculate the output, setting the output of one layer to the input of the next
-            # final output should be stored in self.outputs
-            for layer in self.network:
-                self.outputs = layer.calculate(input)
-                input = self.outputs
-            # return the output
-            return self.outputs
-            
-        #Given a predicted output and ground truth output simply return the loss (depending on the loss function)
-        def calculateloss(self,yp,y):
-            print('calculate loss')
-            return self.loss.loss(yp,y)
+    #Given an input, calculate the output (using the layers calculate() method)
+    def calculate(self,input):
+        # set the input
+        self.inputs = input
+        # go through the layers and calculate the output, setting the output of one layer to the input of the next
+        # final output should be stored in self.outputs
+        for layer in self.network:
+            self.outputs = layer.calculate(input)
+            input = self.outputs
+        # return the output
+        return self.outputs
         
-        #Given a predicted output and ground truth output simply return the derivative of the loss (depending on the loss function)        
-        def lossderiv(self,yp,y):
-            print('lossderiv')
-            return self.loss.derivatderivativeive(yp,y)
+    #Given a predicted output and ground truth output simply return the loss (depending on the loss function)
+    def calculateloss(self,yp,y):
+        print('calculate loss')
+        return self.loss.loss(yp,y)
+    
+    #Given a predicted output and ground truth output simply return the derivative of the loss (depending on the loss function)        
+    def lossderiv(self,yp,y):
+        print('lossderiv')
+        return self.loss.derivatderivativeive(yp,y)
+    
+    #Given a single input and desired output preform one step of backpropagation (including a forward pass, getting the derivative of the loss, and then calling calcwdeltas for layers with the right values         
+    def train(self,x,y):
+        # feed forward
+        self.outputs = self.calculate(x)
+        # calculate the derivative of the loss
+        self.dloss = self.lossderiv(self.outputs,y)
         
-        #Given a single input and desired output preform one step of backpropagation (including a forward pass, getting the derivative of the loss, and then calling calcwdeltas for layers with the right values         
-        def train(self,x,y):
-            # feed forward
-            self.outputs = self.calculate(x)
-            # calculate the derivative of the loss
-            self.dloss = self.lossderiv(self.outputs,y)
-            
-            # TODO: backpropagate
-            # backpropagate
-            
-            
-            print('train')
+        # TODO: backpropagate
+        # backpropagate
+        for i in reversed(range(len(self.network))):
+            if i==0:
+                continue
+            layer = self.network[i]
+            deltaw = layer.calcwdeltas(self.dloss)
+        
+        
+        print('train')
             
             
 if __name__=="__main__":
