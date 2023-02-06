@@ -164,7 +164,7 @@ class Neuron:
     #Simply update the weights using the partial derivatives and the leranring weight
     def updateweight(self):
         print('updateweight') 
-        self.weights -= self.learning_rate*self.dW
+        self.weights -= float(self.learning_rate)*self.dW
      
         
 ############################################
@@ -197,8 +197,7 @@ class FullyConnected:
     def __init__(self, neuron_num, activation, input_num, learning_rate=0.1, weights=None):
         print('fully connected constructor') 
         self.weights = weights if weights is not None else np.random.rand(neuron_num,input_num+1) #if weights is not specified, initialize the weights randomly.
-
-        self.neurons = [Neuron(input_num, activation, learning_rate, self.weights[:,i]) for i in range(neuron_num)] #create a list of neurons with the correct number of inputs and weights
+        self.neurons = [Neuron(input_num, activation, learning_rate, self.weights[i,:]) for i in range(neuron_num)] #create a list of neurons with the correct number of inputs and weights
                 
     #calcualte the output of all the neurons in the layer and return a vector with those values (go through the neurons and call the calcualte() method)      
     def calculate(self, input):
@@ -212,10 +211,12 @@ class FullyConnected:
     def calcwdeltas(self, dloss):
         print('fully connected calcwdeltas') 
         # go through the neurons and call calcpartialderivative() for each
-        self.deltaw  = np.zeros((1,len(self.weights)))
+        self.deltaw  = np.zeros(self.weights.shape)
+        i = 0 
         for neuron in self.neurons:
-            self.deltaw += neuron.calcpartialderivative(dloss)
+            self.deltaw += neuron.calcpartialderivative(dloss[i])
             neuron.updateweight()
+            i += 1
         # update the weights
         return self.deltaw
 
@@ -271,7 +272,7 @@ class NeuralNetwork:
             
         # Setting random weights based on the architecture of the network
         # extra weight added to account for the bias
-        self.weights = weights if weights is not None else np.array([np.random.rand(self.architecture[i]+1,self.architecture[i+1]) for i in range(len(self.architecture)-1)],dtype=object)
+        self.weights = weights if weights is not None else np.array([np.random.rand(self.architecture[i],self.architecture[i+1]+1) for i in range(len(self.architecture)-1)],dtype=object)
         self.network = [FullyConnected(self.architecture[i+1],activation[i],self.architecture[i],learning_rate,self.weights[i]) for i in range(len(self.architecture)-1)]
         # Get the loss function from the Loss class
         self.loss = Loss.get(loss)
@@ -328,8 +329,7 @@ if __name__=="__main__":
         w=np.array([[[.15,.2,.35],[.25,.3,.35]],[[.4,.45,.6],[.5,.55,.6]]])
         x =np.array([0.05,0.1])
         y = np.array([0.01,0.99])
-        print(w)
-        example = NeuralNetwork(1,[2],len(x),["logistic"],"mse",len(y),learningRate,w)
+        example = NeuralNetwork(1,[2],len(x),["logistic","logistic"],"mse",len(y),learningRate,w)
         example.train(x,y)
         print(example.weights)
         
