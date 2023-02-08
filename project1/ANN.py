@@ -134,16 +134,17 @@ class Neuron:
         self._input_dim = input_dim
         # check if activation a string or an Activation object
         self.activation = activation if isinstance(activation, Activation) else Activation.get(activation)
+        # print('neuron constructor')
     
              
     #This method returns the activation of the net
     def activate(self,net):
-        print('activate')
+        # print('activate')
         return self.activation.f(net)
     
     #Calculate the output of the neuron should save the input and output for back-propagation.   
     def calculate(self,input):
-        print('calculate')
+        # print('calculate')
         self.inputs = input
         self.nets = np.dot(self.weights, self.inputs)
         self.outputs = self.activation.f(self.nets)
@@ -151,19 +152,19 @@ class Neuron:
         
     #This method returns the derivative of the activation function with respect to the net   
     def activationderivative(self):
-        print('activationderivative')  
+        # print('activationderivative')  
         return self.activation.df(self.outputs)
       
     #This method calculates the partial derivative for each weight and returns the delta*w to be used in the previous layer
     def calcpartialderivative(self, wtimesdelta):
-        print('calcpartialderivative') 
+        # print('calcpartialderivative') 
         self.delta = wtimesdelta*self.activationderivative()
         self.dW = self.inputs*self.delta
         return self.delta*self.weights
                
     #Simply update the weights using the partial derivatives and the leranring weight
     def updateweight(self):
-        print('updateweight') 
+        # print('updateweight') 
         self.weights -= float(self.learning_rate)*self.dW
      
         
@@ -195,13 +196,13 @@ class FullyConnected:
  
     
     def __init__(self, neuron_num, activation, input_num, learning_rate=0.1, weights=None):
-        print('fully connected constructor') 
+        # print('fully connected constructor') 
         self.weights = weights if weights is not None else np.random.rand(neuron_num,input_num+1) #if weights is not specified, initialize the weights randomly.
         self.neurons = [Neuron(input_num, activation, learning_rate, self.weights[i,:]) for i in range(neuron_num)] #create a list of neurons with the correct number of inputs and weights
                 
     #calcualte the output of all the neurons in the layer and return a vector with those values (go through the neurons and call the calcualte() method)      
     def calculate(self, input):
-        print('fully connected calculate') 
+        # print('fully connected calculate') 
         input = np.append(input,1)
         self.inputs = input 
         self.outputs = np.array([neuron.calculate(input) for neuron in self.neurons])        
@@ -209,7 +210,7 @@ class FullyConnected:
     
     #given the next layer's w*delta, should run through the neurons calling calcpartialderivative() for each (with the correct value), sum up its own w*delta, and then update the weights (using the updateweight() method). I should return the sum of w*delta.          
     def calcwdeltas(self, dloss):
-        print('fully connected calcwdeltas') 
+        # print('fully connected calcwdeltas') 
         # go through the neurons and call calcpartialderivative() for each
         self.deltaw  = np.zeros(self.weights.shape)
         i = 0 
@@ -240,6 +241,8 @@ class NeuralNetwork:
     def loss(self): return self._loss
     @property
     def dloss(self): return self._dloss
+    @property
+    def lossResult(self): return self._lossResult
     
     
     @weights.setter
@@ -254,10 +257,12 @@ class NeuralNetwork:
     def loss(self, x): self._loss = x
     @dloss.setter
     def dloss(self, x): self._dloss = x
+    @lossResult.setter
+    def lossResult(self, x): self._lossResult = x
     
     
     def __init__(self, num_of_layers, num_of_neurons, input_size, activation, loss, output_size=1, learning_rate=0.1, weights=None):
-        print('neural network constructor')
+        # print('neural network constructor')
         self._activations = activation
         self._learning_rate = learning_rate
         # check that the number of neurons is the correct length
@@ -291,31 +296,50 @@ class NeuralNetwork:
         
     #Given a predicted output and ground truth output simply return the loss (depending on the loss function)
     def calculateloss(self,yp,y):
-        print('calculate loss')
+        # print('calculate loss')
         return self.loss.loss(yp,y)
     
     #Given a predicted output and ground truth output simply return the derivative of the loss (depending on the loss function)        
     def lossderiv(self,yp,y):
-        print('lossderiv')
+        # print('lossderiv')
         return self.loss.derivatderivativeive(yp,y)
     
     #Given a single input and desired output preform one step of backpropagation (including a forward pass, getting the derivative of the loss, and then calling calcwdeltas for layers with the right values         
-    def train(self,x,y):
-        # feed forward
-        self.outputs = self.calculate(x)
-        # calculate the derivative of the loss
-        self.dloss = self.lossderiv(self.outputs,y)
+    def train(self,x,y,numiter=0):
+        self.lossResult = []
+        if numiter==0:
+            while self.dloss>0.1:
+                # feed forward
+                self.outputs = self.calculate(x)
+                # calculate the derivative of the loss
+                self.dloss = self.lossderiv(self.outputs,y)
+                self.lossResult.append(self.calculateloss(self.outputs,y))
+                
+                # backpropagate starting with last layer
+                for i in reversed(range(len(self.network))):
+                    if i==0:
+                        continue
+                    layer = self.network[i]
+                    deltaw = layer.calcwdeltas(self.dloss)
+        else:
+            for iter in range(numiter):
+                # feed forward
+                self.outputs = self.calculate(x)
+                # calculate the derivative of the loss
+                self.dloss = self.lossderiv(self.outputs,y)
+                cl = self.calculateloss(self.outputs,y)
+                self.lossResult.append(cl)
+                print(cl)
+                
+                # backpropagate starting with last layer
+                for i in reversed(range(len(self.network))):
+                    if i==0:
+                        continue
+                    layer = self.network[i]
+                    deltaw = layer.calcwdeltas(self.dloss)
         
-        # TODO: backpropagate
-        # backpropagate
-        for i in reversed(range(len(self.network))):
-            if i==0:
-                continue
-            layer = self.network[i]
-            deltaw = layer.calcwdeltas(self.dloss)
         
-        
-        print('train')
+        # print('train')
             
             
 if __name__=="__main__":
@@ -330,11 +354,13 @@ if __name__=="__main__":
         x =np.array([0.05,0.1])
         y = np.array([0.01,0.99])
         example = NeuralNetwork(1,[2],len(x),["logistic","logistic"],"mse",len(y),learningRate,w)
-        example.train(x,y)
+        example.train(x,y,1)
         print(example.weights)
         
     elif(sys.argv[2]=='and'):
         print('learn and')
         
     elif(sys.argv[2]=='xor'):
+        xs = np.array([[0,0],[1,0],[0,1],[1,1]])
+        ys = np.array([0,1,1,0])
         print('learn xor')
