@@ -216,7 +216,8 @@ class FullyConnected:
         # print(dloss[i],self.neurons[i].calcpartialderivative(dloss[i]),self.weights[i])
         for i in range(len(self.neurons)):
             neuron = self.neurons[i]
-            self.deltaw[i] += np.float64(neuron.calcpartialderivative(dloss[i]))
+            # print(self.weights[i],self.neurons[i].weights,dloss)
+            self.deltaw[i] += np.float64(neuron.calcpartialderivative(dloss[0]))
             neuron.updateweight()
         # update the weights
         return self.deltaw
@@ -327,7 +328,7 @@ class NeuralNetwork:
         calcLoss = self.calculateloss(self.outputs,y)
         self.lossResult.append(calcLoss)
         # print(calcLoss)
-        
+        # print(self.network)
         # backpropagate starting with last layer
         for i in reversed(range(len(self.network))):
             if i==0:
@@ -346,7 +347,8 @@ class NeuralNetwork:
         # else:
         for iter in range(numiter):
             if x.ndim==1:
-                self.doEpoch(x,y)
+                ll= self.doEpoch(x,y)
+                print(ll)
             else:
                 ll = 0
                 for it in range(len(x)):
@@ -365,21 +367,25 @@ if __name__=="__main__":
     
     elif (sys.argv[2]=='example'):
         print('run example from class (single step)')
+        numEpochs = 500
+        print('running with',numEpochs,'epochs')
         w=np.array([[[.15,.2,.35],[.25,.3,.35]],[[.4,.45,.6],[.5,.55,.6]]])
         x =np.array([0.05,0.1])
         y = np.array([0.01,0.99])
         example = NeuralNetwork(1,[2],len(x),["logistic","logistic"],"mse",len(y),learningRate)
-        example.train(x,y,10)
+        example.train(x,y,numEpochs)
         print(example.weights)
         
     elif(sys.argv[2]=='and'):
         xs = np.array([[0,0],[1,0],[0,1],[1,1]])
         ys = np.array([0,0,0,1])
-        andnn = NeuralNetwork(2,[2,1],len(xs[0]),["logistic","linear","logistic"],"mse",1,learningRate)
-        andnn.train(xs,ys,100)
+        andnn = NeuralNetwork(2,[2,2],len(xs[0]),["logistic","linear","logistic"],"mse",1,learningRate)
+        andnn.train(xs,ys,3000)
         print('learn and')
         
     elif(sys.argv[2]=='xor'):
         xs = np.array([[0,0],[1,0],[0,1],[1,1]])
         ys = np.array([0,1,1,0])
+        xor = NeuralNetwork(2,[2,2],len(xs[0]),["logistic","linear","logistic"],"mse",1,learningRate)
+        xor.train(xs,ys,1)
         print('learn xor')
