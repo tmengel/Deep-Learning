@@ -44,7 +44,6 @@ class Neuron:
     
     #This method returns the derivative of the activation function with respect to the net   
     def activationderivative(self):
-        # print('activationderivative')  
         if self.activation == "linear": return 1
         elif self.activation == "logistic": return self.output*(1-self.output)
         else : raise ValueError("Activation function not found")
@@ -102,7 +101,6 @@ class Layer:
         for i in range(self.neuron_num):
             deltaw += self.neurons[i].calcpartialderivative(dloss[i])
             self.neurons[i].updateweight()    
-        #print('deltaw', deltaw)
         return deltaw
         
             
@@ -170,7 +168,6 @@ class NeuralNetwork:
         for layer in self.layers:
             input = np.append(input, 1)
             output = layer.calculate(input)
-            #print(output)
             input = output
         return output
     
@@ -190,68 +187,75 @@ class NeuralNetwork:
         else : raise ValueError(f'Loss function {self.loss} not supported')
         
     def lossderiv(self,yhat,y):
-        if self.loss == 'mse':
-            dloss = 0
-            for i in range(len(yhat)):
-                dloss = 2*(yhat[i] - y[i])
-            dloss = dloss/len(yhat)
-            return dloss
-        elif self.loss == 'bce':
-            dloss = 0
-            for i in range(len(yhat)):
-                dloss = -y[i]/yhat[i] + (1-y[i])/(1-yhat[i])
-            dloss = dloss/len(yhat)
-            return dloss
-        else : raise ValueError(f'Loss function {self.loss} not supported')
+        if len(yhat)==1:
+            if self.loss == 'mse':
+                dloss = 0
+                for i in range(len(yhat)):
+                    dloss = 2*(yhat[i] - y[i])
+                dloss = dloss/len(yhat)
+                return [dloss]
+            elif self.loss == 'bce':
+                dloss = 0
+                for i in range(len(yhat)):
+                    dloss = -y[i]/yhat[i] + (1-y[i])/(1-yhat[i])
+                dloss = dloss/len(yhat)
+                return [dloss]
+            else : raise ValueError(f'Loss function {self.loss} not supported')
+        else:
+            dloss = []
+            if self.loss == 'mse':
+                for i in range(len(yhat)):
+                    dloss.append(2*(yhat[i] - y[i]))
+                dloss = np.array(dloss)/len(yhat)
+                return dloss
+            elif self.loss == 'bce':
+                for i in range(len(yhat)):
+                    dloss.append(-y[i]/yhat[i] + (1-y[i])/(1-yhat[i]))
+                dloss = np.array(dloss)/len(yhat)
+                return dloss
+            else : raise ValueError(f'Loss function {self.loss} not supported')
     
     def train(self, X, Y, epochs=1, verbose=False):
-        # check if X is multiple samples
-        # if type(X[0]) != list:
-        #     X = [X] 
-        #     Y = [Y]
         for epoch in range(epochs):
+            loss = 0
             for i in range(len(X)):
-                #print(f'X: {X[i]} Y: {Y[i]}')
                 yhat = self.calculate(X[i])
-                #print(f'Yhat: {yhat}')
                 dloss = self.lossderiv(yhat, Y[i])
-                #print(f'Dloss: {dloss}')
-                #check if dloss is a list
-                dloss = [dloss]
-               # print(f'Dloss: {dloss}')
                 for j in range(len(self.layers)-1, -1, -1):
                     dloss = self.layers[j].calcwdeltas(dloss)   
-            yhat = []
-            ytest = []
-            for i in range(len(X)):
-                yhat.append(*self.calculate(X[i]))
-                ytest.append(*Y[i])
-            loss = self.calculateloss(yhat, Y)
+                yhat = []
+                ytest = []
+                for i in range(len(X)):
+                    yhat.append(self.calculate(X[i]))
+                    ytest.append(Y[i])
+                loss += self.calculateloss(yhat[i], Y[i])/len(X)
             if epoch % 10000 == 0:
                 print(f'Epoch: {epoch}, Loss: {loss}')
         
          
 if __name__=="__main__":
-    learningRate = sys.argv[1]
+    learningRate = float(sys.argv[1])
     print('Using a learning rate of',learningRate)
     if (len(sys.argv)<3):
         print('a good place to test different parts of your code')
     
     elif (sys.argv[2]=='example'):
+        numEpochs = 1
         print('run example from class (single step)')
         w=np.array([[[.15,.2,.35],[.25,.3,.35]],[[.4,.45,.6],[.5,.55,.6]]])
-        x =np.array([0.05,0.1])
-        y = np.array([0.01,0.99])
+        x =np.array([[0.05,0.1]])
+        y = np.array([[0.01,0.99]])
         example = NeuralNetwork(1,[2],len(x),["logistic","logistic"],"mse",len(y),learningRate,w)
-        example.train(x,y,1,True)
+        example.train(x,y,numEpochs,True)
         print(example.weights)
         
     elif(sys.argv[2]=='and'):
-        test = NeuralNetwork(num_of_layers=1, num_of_neurons=[1], input_size=2, activation=['linear', 'logistic'], loss='bce', output_size=1, learning_rate=learningRate)
+        test = NeuralNetwork(num_of_layers=0, num_of_neurons=[], input_size=2, activation=['linear', 'logistic'], loss='bce', output_size=1, learning_rate=learningRate)
         x = np.array([[0,0],[0,1],[1,0],[1,1]])
         y = np.array([[0],[0],[0],[1]])
         print('training network')
-        test.train(x,y,epochs=10000,verbose=True)
+        print(test.architecture)
+        test.train(x,y,epochs=1,verbose=True)
         yhat = []
         for i in range(len(x)):
             yhat.append(*test.calculate(x[i]))
@@ -265,7 +269,7 @@ if __name__=="__main__":
         x = np.array([[0,0],[1,0],[0,1],[1,1]])
         y = np.array([[0],[1],[1],[0]])
         print('training network')
-        test.train(x,y,epochs=50000,verbose=True)
+        test.train(x,y,epochs=100000,verbose=True)
         yhat = []
         for i in range(len(x)):
             yhat.append(*test.calculate(x[i]))
