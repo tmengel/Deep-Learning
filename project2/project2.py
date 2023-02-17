@@ -122,37 +122,10 @@ class ConvolutionalLayer:
     
     '''
     def __init__(self, num_kernels, kernel_size, activation_fn, input_dim, learning_rate, weights=None):
-        self.num_kernels = num_kernels
-        self.kernel_size = kernel_size
-        self.activation_fn = activation_fn
-        self.input_dim = input_dim
-        self.learning_rate = learning_rate
+       print('Convolutional Layer')
         
-        # Initialize the weights
-        if weights is not None:
-            self.weights = weights
-        else:
-            self.weights = np.random.randn(num_kernels, kernel_size, kernel_size, input_dim) * np.sqrt(2.0 / (num_kernels * kernel_size * kernel_size * input_dim))
-        
-        self.bias = np.zeros((num_kernels,))
-        self.neurons = []
-        
-        # Initialize the neurons
-        for i in range(num_kernels):
-            neuron_weights = self.weights[i]
-            self.neurons.append(Neuron(neuron_weights, self.bias[i], activation_fn))
-        
-    def set_input_size(self, input_size):
-        self.input_size = input_size
-        
-    def calculate(self, x):
-        self.output = np.zeros((self.num_kernels, self.input_size - self.kernel_size + 1, self.input_size - self.kernel_size + 1))
-        for i in range(self.num_kernels):
-            for j in range(self.input_size - self.kernel_size + 1):
-                for k in range(self.input_size - self.kernel_size + 1):
-                    input_patch = x[:, j:j+self.kernel_size, k:k+self.kernel_size]
-                    self.output[i, j, k] = self.neurons[i].calculate(input_patch)
-        return self.output
+    def calculate(self, input):
+        print('Calculate')
     
     def calculatewdeltas(self, next_delta):
         print('Calculate w deltas')
@@ -162,28 +135,10 @@ class MaxPoolingLayer:
     
     '''
     def __init__(self, kernel_size, input_shape):
-        self.kernel_size = kernel_size
-        self.input_shape = input_shape
-        self.max_locations = None
-    
+        print('Max Pooling Layer')
+        
     def calculate(self, input):
-        h, w, c = self.input_shape
-        kh, kw = self.kernel_size
-        output_h = h // kh
-        output_w = w // kw
-        self.max_locations = np.zeros((output_h, output_w, c), dtype=np.int32)
-        output = np.zeros((output_h, output_w, c))
-        for i in range(output_h):
-            for j in range(output_w):
-                for k in range(c):
-                    window = input[i*kh:(i+1)*kh, j*kw:(j+1)*kw, k]
-                    max_val = np.max(window)
-                    max_loc = np.argmax(window)
-                    max_row = max_loc // kw
-                    max_col = max_loc % kw
-                    output[i, j, k] = max_val
-                    self.max_locations[i, j, k] = (i*kh+max_row, j*kw+max_col)
-        return output
+        print('Calculate')
     
     def calculatewdeltas(self, next_layer_wdeltas):
         print('Calculate w deltas')
@@ -199,7 +154,7 @@ class FlattenLayer:
         return input.reshape((input.shape[0], -1))
     
     def calculatewdeltas(self, next_layer_wdeltas):
-        return next_layer_wdeltas.reshape(self.input_shape)')
+        return next_layer_wdeltas.reshape(self.input_shape) 
         
 class NeuralNetwork:
     '''
