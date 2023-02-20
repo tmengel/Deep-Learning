@@ -119,10 +119,16 @@ class FullyConnectedLayer:
 
 class ConvolutionalLayer:
     '''
-    
+    Convoluational Layer Class which is initialized with the following parameters:
+    num_kernels: Number of kernels in the layer
+    kernel_size: Size of the kernel
+    input_dim: Number of channels in the input
+    learning_rate: Learning rate
+    weights: Weights of the layer
     '''
-    def __init__(self, num_kernels, kernel_size, activation_fn, input_dim, learning_rate, weights=None):
+    def __init__(self, num_kernels, kernel_size, activation, input_dim, learning_rate, weights=None):
        print('Convolutional Layer')
+       self.number_of_neurons = input_dim.shape[0]
         
     def calculate(self, input):
         print('Calculate')
@@ -155,7 +161,182 @@ class FlattenLayer:
     
     def calculatewdeltas(self, next_layer_wdeltas):
         return next_layer_wdeltas.reshape(self.input_shape) 
+ import numpy as np
+import sys
+class Neuron:
+    '''
+    Class for a single neuron in a neural network
+    '''
+    def __init__(self, input_dim, activation, learning_rate=0.1, weights=None, verbose=False):
+        # Initialize the neuron with the following parameters
+        self.input_dim = input_dim # Number of inputs plus 1 for bias (set eariler)
+        self.activation = activation  # Activation function
+        # Activation function can be either 'linear' or 'logistic'
+        if activation not in ['linear', 'logistic']:
+            raise ValueError(f'Activation function {activation} not supported')
+    
+        self.learning_rate = learning_rate # Learning rate
+        # Weights are initialized randomly if not provided
+        if weights is None: self.weights = np.random.rand(input_dim)
+        else: self.weights = weights
+        if self.weights.shape[0] != input_dim:
+            raise ValueError(f'Input dim does not match the dim of weights, input dim: {input_dim}, weights dim: {self.weights.shape[0]}')
+        # Initialize the output and inputs to None
+        self.output = None
+        self.inputs = []
+        # Initialize the partial derivatives to None
+        self.dW = []
         
+        if verbose: # Print the parameters if verbose is True
+            print('Initialized Neuron with the following architecture:')
+            print(f'Input Dim: {input_dim}, Activation Function: {activation}')
+            print(f'Learning Rate: {learning_rate}, Weights: {weights}')
+            print(f'Weights Shape: {weights.shape}')
+    
+    # This method returns the output of the neuron given the input
+    def active(self, input): # Activation function
+        if self.activation == 'linear': return input
+        elif self.activation == 'logistic': return 1/(1+np.exp(-input))
+        else: raise ValueError(f'Activation function {self.activation} not supported')
+
+    # This method calculates the output of the neuron given the input
+    def calculate(self, X):
+        self.inputs = X
+        input = np.dot(self.weights, X) # Calculate the dot product of the weights and the inputs
+        output = self.active(input) # Calculate the output of the neuron after applying the activation function
+        self.output = output
+        return output # Return the output of the neuron
+    
+    #This method returns the derivative of the activation function with respect to the net   
+    def activationderivative(self):
+        if self.activation == "linear": return 1
+        elif self.activation == "logistic": return self.output*(1-self.output) 
+        else : raise ValueError("Activation function not found")
+      
+    #This method calculates the partial derivative for each weight and returns the delta*w to be used in the previous layer
+    def calcpartialderivative(self, wtimesdelta):
+        # print('calcpartialderivative') 
+        delta = wtimesdelta*self.activationderivative()
+        self.dW = self.inputs*delta #Calculate the partial derivative for each weight
+        return delta*self.weights
+               
+    #Simply update the weights using the partial derivatives and the leranring weight
+    def updateweight(self):
+        for i in range(len(self.weights)): #Update the weights
+            self.weights[i] -= self.learning_rate*self.dW[i]
+    
+class FullyConnectedLayer:
+    '''
+    Class for a single layer in a neural network to manage the neurons in the layer
+    '''
+    def __init__(self, neuron_num, activation, input_num, learning_rate=0.1, weights=None, verbose=False):
+        # Initialize the layer with the following parameters
+        self.neuron_num = neuron_num   # Number of neurons in the layer
+        self.activation = activation  # Activation function
+        # Activation function can be either 'linear' or 'logistic'
+        self.learning_rate = learning_rate # Learning rate
+        self.input_num = input_num # Number of inputs to the layer (including bias)
+        # Weights are initialized randomly if not provided
+        if weights is None:
+            weights = []
+            for i in range(neuron_num):
+                weights.append(np.random.rand(input_num+1)) # Initialize the weights randomly
+        self.weights = weights
+        # Initialize the neurons in the layer
+        self.neurons = []
+        for i in range(neuron_num):
+            weight = weights[i]
+            inputdim = weight.shape[0]
+            if inputdim != input_num:# Check if the input dimension matches the dimension of the weights
+                raise ValueError(f'Input dim does not match the dim of weights, input dim: {inputdim}, weights dim: {input_num}')
+            self.neurons.append(Neuron(input_dim=inputdim+1, activation=activation, learning_rate=learning_rate, weights=weight))
+        # Initialize the output and inputs to None
+        self.outputs = []
+        if verbose: # Print the parameters if verbose is True
+            print('Initialized Layer with the following architecture:')
+            print(f'Neuron Number: {neuron_num}, Activation Function: {activation}')
+            print(f'Input Number: {input_num}, Learning Rate: {learning_rate}')
+            print(f'Weights: {weights}')
+            print(f'Weights Shape: {weights.shape}')
+    # This method calculates the output of the layer given the input
+    def calculate(self, X):
+        input = X
+        input = np.append(input, 1) # Append 1 to the input for bias
+        output = []
+        for neuron in self.neurons:
+            output.append(neuron.calculate(input)) # Calculate the output of each neuron in the layer
+        return output
+    #This method calculates the partial derivative for each weight and returns the delta*w to be used in the previous layer
+    def calcwdeltas(self, dloss):
+        #given the next layer's w*delta, should run through the neurons calling calcpartialderivative() for each (with the correct value), sum up its own w*delta, and then update the weights (using the updateweight() method). I should return the sum of w*delta.          
+        deltaw = np.zeros(self.input_num+1)
+        for i in range(self.neuron_num):
+            deltaw += self.neurons[i].calcpartialderivative(dloss[i]) #Calculate the partial derivative sum for each weight
+            self.neurons[i].updateweight()    #Update the weights
+        return deltaw #Return the sum of w*delta
+
+class ConvolutionalLayer:
+    '''
+    Convoluational Layer Class which is initialized with the following parameters:
+    num_kernels: Number of kernels in the layer
+    kernel_size: Size of the kernel
+    input_dim: Number of channels in the input
+    learning_rate: Learning rate
+    weights: Weights of the layer
+    '''
+    def __init__(self, num_kernels, kernel_size, activation, input_dim, learning_rate, weights=None):
+        print('Convolutional Layer')
+        self.number_of_neurons = (input_dim[0]-kernel_size+1)*(input_dim[1]-kernel_size+1)*num_kernels
+        self.num_kernels = num_kernels
+        self.activation = activation
+        self.input_dim = input_dim
+        self.kernel_size = kernel_size
+        self.learning_rate = learning_rate
+        self.weights = weights
+        if weights is None:
+            self.weights = np.random.rand(num_kernels, input_dim[2]*kernel_size*kernel_size+1)
+        self.outputs = []
+        self.neurons = []
+        for i in range(num_kernels):
+            weight = self.weights[i]
+            inputdim = weight.shape[-1]
+            num_neurons = (input_dim[0]-kernel_size+1)*(input_dim[1]-kernel_size+1)
+            for j in range(num_neurons):
+                self.neurons.append(Neuron(input_dim=inputdim, activation=activation, learning_rate=learning_rate, weights=weight))
+        
+    def calculate(self, input):
+        self.outputs = np.zeros((self.input_dim[0]-self.kernel_size+1, self.input_dim[1]-self.kernel_size+1, self.num_kernels))
+        if input.shape != self.input_dim:
+            raise ValueError(f'Input shape does not match the input dim, input shape: {input.shape}, input dim: {self.input_dim}')
+        for i in range(self.num_kernels):
+            kernel = self.weights[i]
+            for j in range(self.input_dim[0]-self.kernel_size+1):
+                for k in range(self.input_dim[1]-self.kernel_size+1):
+                    input_patch = input[j:j+self.kernel_size, k:k+self.kernel_size, :]
+                    input_patch = input_patch.reshape(-1)
+                    input_patch = np.append(input_patch, 1)
+                    self.outputs[j, k, i] = self.neurons[i*(self.input_dim[0]-self.kernel_size+1)*(self.input_dim[1]-self.kernel_size+1)+j*(self.input_dim[1]-self.kernel_size+1)+k].calculate(input_patch)
+        return self.outputs
+    
+    def calculatewdeltas(self, next_delta):
+        print('Calculate w deltas')
+        #deltaw = np.zeros(self.weights.shape)
+        
+
+class MaxPoolingLayer:
+    '''
+    
+    '''
+    def __init__(self, kernel_size, input_shape):
+        print('Max Pooling Layer')
+        
+    def calculate(self, input):
+        print('Calculate')
+    
+    def calculatewdeltas(self, next_layer_wdeltas):
+        print('Calculate w deltas')
+        
+       
 class NeuralNetwork:
     '''
     Class for a neural network to manage the layers and the training
@@ -181,7 +362,7 @@ class NeuralNetwork:
             print('Initialized Neural Network with the following architecture:')
             print(f'Input Size: {input_size}, Loss: {loss}, Learning Rate: {learning_rate}')
     
-    def addLayer(self, layer_type, num_of_neurons, activation, weights=None):
+    def addLayer(self, layer_type, num_of_neurons, activation, kernel_size=1, weights=None):
         self.num_of_layers += 1
         self.num_of_neurons.append(num_of_neurons)
         self.layer_types.append(layer_type)
@@ -192,7 +373,9 @@ class NeuralNetwork:
         # Add the layer to the neural network
         if layer_type == 'fullyconnected':
             print('Adding Fully Connected Layer')
+            self.layers.append(FullyConnectedLayer(num_of_neurons=num_of_neurons, activation=activation, input_dim=self.architecture[-1], learning_rate=self.learning_rate, weights=weights))
         elif layer_type == 'convolutional':
+            self.layers.append(ConvolutionalLayer(num_kernels=num_of_neurons, kernel_size=kernel_size, activation=activation, input_dim=self.architecture[-1], learning_rate=self.learning_rate, weights=weights))
             print('Adding Convolutional Layer')
         elif layer_type == 'maxpooling':
             print('Adding Max Pooling Layer')
@@ -206,7 +389,7 @@ class NeuralNetwork:
     def calculate(self,X):
         input = X
         for layer in self.layers:
-            input = np.append(input, 1) # Append a 1 to the input to account for the bias
+            #input = np.append(input, 1) # Append a 1 to the input to account for the bias # redone in the layer
             output = layer.calculate(input)# Calculate the output of the layer
             input = output
         return output   # Return the output of the neural network
