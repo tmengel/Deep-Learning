@@ -347,14 +347,14 @@ class NeuralNetwork:
         
         for epoch in range(epochs): # Iterate through the epochs
             loss = 0 # Initialize the loss
+            yhat = [] # Initialize the output of the neural network
+            ytest = [] # Initialize the ground truth
             for i in range(len(X)): # Iterate through the training examples
                 yh = self.calculate(X[i])     # Calculate the output of the neural network
                 dloss = self.lossderiv(yh, Y[i]) # Calculate the derivative of the loss function with respect to the output of the neural network
                 for j in range(len(self.layers)-1, -1, -1): # Iterate through the layers in reverse order
                     dloss = self.layers[j].calcwdeltas(dloss)  # Calculate the derivative of the loss function with respect to the weights of the layer  
-            yhat = [] # Initialize the output of the neural network
-            ytest = [] # Initialize the ground truth
-            for i in range(len(X)): # Iterate through the training examples
+            #for i in range(len(X)): # Iterate through the training examples
                 yhat.append(self.calculate(X[i])) # Calculate the output of the neural network
                 ytest.append(Y[i]) # Calculate the ground truth
                 loss += self.calculateloss(yhat[i], Y[i])/len(X)
