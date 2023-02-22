@@ -82,7 +82,7 @@ class FullyConnectedLayer:
         # Weights are initialized randomly if not provided
         if weights is None:
             weights = []
-            for i in range(neuron_num):
+            for i in range(neuron_num): 
                 weights.append(np.random.rand(input_num)) # Initialize the weights randomly
         self.weights = weights
         # Initialize the neurons in the layer
@@ -100,7 +100,7 @@ class FullyConnectedLayer:
             print(f'Neuron Number: {neuron_num}, Activation Function: {activation}')
             print(f'Input Number: {input_num}, Learning Rate: {learning_rate}')
             print(f'Weights: {weights}')
-            print(f'Weights Shape: {weights.shape}')
+            print(f'Weights Length: {len(weights)}')
     # This method calculates the output of the layer given the input
     def calculate(self, X):
         input = X
@@ -161,7 +161,7 @@ class ConvolutionalLayer:
         
 class MaxPoolingLayer:
     '''
-    
+    Max Pooling Layer
     '''
     def __init__(self, kernel_size, input_shape):
         print('Max Pooling Layer')
@@ -275,9 +275,9 @@ class NeuralNetwork:
         # Add the layer to the neural network
         if layer_type == 'fullyconnected':
             print('Adding Fully Connected Layer')
-            self.layers.append(FullyConnectedLayer(num_of_neurons=num_of_neurons, activation=activation, input_dim=self.architecture[-1], learning_rate=self.learning_rate, weights=weights))
+            self.layers.append(FullyConnectedLayer(num_of_neurons, activation,self.architecture[-1]+1, self.learning_rate, weights))
         elif layer_type == 'convolutional':
-            self.layers.append(ConvolutionalLayer(num_kernels=num_of_neurons, kernel_size=kernel_size, activation=activation, input_dim=self.architecture[-1], learning_rate=self.learning_rate, weights=weights))
+            self.layers.append(ConvolutionalLayer(num_of_neurons, kernel_size, activation, self.architecture[-1], self.learning_rate, weights))
             print('Adding Convolutional Layer')
         elif layer_type == 'maxpooling':
             print('Adding Max Pooling Layer')
@@ -348,15 +348,15 @@ class NeuralNetwork:
         for epoch in range(epochs): # Iterate through the epochs
             loss = 0 # Initialize the loss
             for i in range(len(X)): # Iterate through the training examples
-                yhat = self.calculate(X[i])     # Calculate the output of the neural network
-                dloss = self.lossderiv(yhat, Y[i]) # Calculate the derivative of the loss function with respect to the output of the neural network
+                yh = self.calculate(X[i])     # Calculate the output of the neural network
+                dloss = self.lossderiv(yh, Y[i]) # Calculate the derivative of the loss function with respect to the output of the neural network
                 for j in range(len(self.layers)-1, -1, -1): # Iterate through the layers in reverse order
                     dloss = self.layers[j].calcwdeltas(dloss)  # Calculate the derivative of the loss function with respect to the weights of the layer  
-                yhat = [] # Initialize the output of the neural network
-                ytest = [] # Initialize the ground truth
-                for i in range(len(X)): # Iterate through the training examples
-                    yhat.append(self.calculate(X[i])) # Calculate the output of the neural network
-                    ytest.append(Y[i]) # Calculate the ground truth
+            yhat = [] # Initialize the output of the neural network
+            ytest = [] # Initialize the ground truth
+            for i in range(len(X)): # Iterate through the training examples
+                yhat.append(self.calculate(X[i])) # Calculate the output of the neural network
+                ytest.append(Y[i]) # Calculate the ground truth
                 loss += self.calculateloss(yhat[i], Y[i])/len(X)
             if epoch % 10000 == 0: # Print the loss every 10000 epochs
                 print(f'Epoch: {epoch}, Loss: {loss}') # Print the loss
