@@ -416,3 +416,10 @@ if __name__=="__main__": # Run the main function
         for i in range(len(x)):
             print(f'X: {x[i]}, Y: {y[i]}, Yhat: {yhat[i]}')
         print('Total Loss: ', test.calculateloss(yhat, y))
+    
+    elif(sys.argv[2] == 'CNN'):
+        testCNN = NeuralNetwork(input_size=(28,28,3), loss='bce', learning_rate=0.01, verbose=True)
+        testCNN.addLayer('convolutional', 7, 'logistic', kernel_size=5)
+        test_input = np.random.rand(28,28,3)
+        output = testCNN.calculate(test_input)
+        output.shape
