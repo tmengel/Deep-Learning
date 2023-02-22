@@ -185,6 +185,20 @@ class MaxPoolingLayer:
     def calculatewdeltas(self, next_layer_wdeltas):
         print('Calculate w deltas')
        
+
+class FlattenLayer:
+    '''
+    Flattening Layer
+    '''
+    def __init__(self, input_shape):
+        print('Flatten Layer')
+        self.input_shape = input_shape
+        self.outputs = None
+        
+    def calculate(self, input):
+        print('Calculate Flatten')
+        self.outputs = input.flatten()
+        return self.outputs
         
 class NeuralNetwork:
     '''
