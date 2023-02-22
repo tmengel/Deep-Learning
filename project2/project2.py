@@ -165,9 +165,22 @@ class MaxPoolingLayer:
     '''
     def __init__(self, kernel_size, input_shape):
         print('Max Pooling Layer')
+        self.number_of_neurons = (input_shape[0]-kernel_size+1)*(input_shape[1]-kernel_size+1)
+        self.input_shape = input_shape
+        self.kernel_size = kernel_size
+        self.outputs = []
         
     def calculate(self, input):
-        print('Calculate')
+        print('Calculate Max Pooling')
+        xPool = (self.input_shape[0]-self.kernel_size+1)
+        yPool = (self.input_shape[1]-self.kernel_size+1)
+        for j in range(xPool):
+            l = []
+            for i in range(yPool):
+                l.append(np.amax(input[j:j+self.kernel_size,i:i+self.kernel_size]))
+            self.outputs.append(l)
+        return self.outputs
+
     
     def calculatewdeltas(self, next_layer_wdeltas):
         print('Calculate w deltas')
@@ -280,6 +293,7 @@ class NeuralNetwork:
             self.layers.append(ConvolutionalLayer(num_of_neurons, kernel_size, activation, self.architecture[-1], self.learning_rate, weights))
             print('Adding Convolutional Layer')
         elif layer_type == 'maxpooling':
+            self.layers.append(MaxPoolingLayer(kernel_size,self.architecture[-1]))
             print('Adding Max Pooling Layer')
         elif layer_type == 'flatten':
             print('Adding Flatten Layer')
@@ -291,7 +305,7 @@ class NeuralNetwork:
     def calculate(self,X):
         input = X
         for layer in self.layers:
-            input = np.append(input, 1) # Append a 1 to the input to account for the bias
+            # input = np.append(input, 1) # Append a 1 to the input to account for the bias
             output = layer.calculate(input)# Calculate the output of the layer
             input = output
         return output   # Return the output of the neural network
@@ -354,7 +368,6 @@ class NeuralNetwork:
                 dloss = self.lossderiv(yh, Y[i]) # Calculate the derivative of the loss function with respect to the output of the neural network
                 for j in range(len(self.layers)-1, -1, -1): # Iterate through the layers in reverse order
                     dloss = self.layers[j].calcwdeltas(dloss)  # Calculate the derivative of the loss function with respect to the weights of the layer  
-            #for i in range(len(X)): # Iterate through the training examples
                 yhat.append(self.calculate(X[i])) # Calculate the output of the neural network
                 ytest.append(Y[i]) # Calculate the ground truth
                 loss += self.calculateloss(yhat[i], Y[i])/len(X)
