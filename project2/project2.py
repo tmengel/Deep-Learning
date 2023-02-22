@@ -103,7 +103,7 @@ class FullyConnectedLayer:
             print(f'Weights Length: {len(weights)}')
     # This method calculates the output of the layer given the input
     def calculate(self, X):
-        input = X
+        input = np.append(X,1)
         output = []
         for neuron in self.neurons:
             output.append(neuron.calculate(input)) # Calculate the output of each neuron in the layer
@@ -190,9 +190,8 @@ class FlattenLayer:
     '''
     Flattening Layer
     '''
-    def __init__(self, input_shape):
+    def __init__(self):
         print('Flatten Layer')
-        self.input_shape = input_shape
         self.outputs = None
         
     def calculate(self, input):
@@ -310,6 +309,7 @@ class NeuralNetwork:
             self.layers.append(MaxPoolingLayer(kernel_size,self.architecture[-1]))
             print('Adding Max Pooling Layer')
         elif layer_type == 'flatten':
+            self.layers.append(FlattenLayer())
             print('Adding Flatten Layer')
         else:
             raise ValueError(f'Layer type {layer_type} not supported')
@@ -394,57 +394,7 @@ if __name__=="__main__": # Run the main function
     if (len(sys.argv)<3):
         print('a good place to test different parts of your code')
     
-    elif (sys.argv[2]=='example'):
-        numEpochs = 1
-        print('run example from class (single step)')
-        w=np.array([[[.15,.2,.35],[.25,.3,.35]],[[.4,.45,.6],[.5,.55,.6]]])
-        x =np.array([[0.05,0.1]])
-        y = np.array([[0.01,0.99]])
-        example = NeuralNetwork(1,[2],len(x),["logistic","logistic"],"mse",len(y),learningRate,w)
-        example.train(x,y,numEpochs,True)
-        print(example.weights)
-        
-    elif(sys.argv[2]=='and'):
-        test = NeuralNetwork(num_of_layers=0, num_of_neurons=[], input_size=2, activation=['linear', 'logistic'], loss='bce', output_size=1, learning_rate=learningRate)
-        x = np.array([[0,0],[0,1],[1,0],[1,1]])
-        y = np.array([[0],[0],[0],[1]])
-        print('training network')
-        print(test.architecture)
-        test.train(x,y,epochs=1,verbose=True)
-        yhat = []
-        for i in range(len(x)):
-            yhat.append(*test.calculate(x[i]))
-        print("And")
-        for i in range(len(x)):
-            print(f'X: {x[i]}, Y: {y[i]}, Yhat: {yhat[i]}')
-        print('Total Loss: ', test.calculateloss(yhat, y))
-        
-    elif(sys.argv[2]=='xor'):
-        test = NeuralNetwork(num_of_layers=1, num_of_neurons=[15], input_size=2, activation=['logistic', 'logistic'], loss='bce', output_size=1, learning_rate=0.1)
-        x = np.array([[0,0],[1,0],[0,1],[1,1]])
-        y = np.array([[0],[1],[1],[0]])
-        print('training network')
-        test.train(x,y,epochs=100000,verbose=True)
-        yhat = []
-        for i in range(len(x)):
-            yhat.append(*test.calculate(x[i]))
-        print("XOR")
-        for i in range(len(x)):
-            print(f'X: {x[i]}, Y: {y[i]}, Yhat: {yhat[i]}')
-        print('Total Loss: ', test.calculateloss(yhat, y))
-
-        print("Training single perceptron")
-        test = NeuralNetwork(num_of_layers=0, num_of_neurons=[], input_size=2, activation=['logistic'], loss='bce', output_size=1, learning_rate=0.3)
-        test.train(x,y,epochs=100000,verbose=True)
-        yhat = []
-        for i in range(len(x)):
-            yhat.append(*test.calculate(x[i]))
-        print("XOR Single Perceptron")
-        for i in range(len(x)):
-            print(f'X: {x[i]}, Y: {y[i]}, Yhat: {yhat[i]}')
-        print('Total Loss: ', test.calculateloss(yhat, y))
-    
-    elif(sys.argv[2] == 'CNN'):
+    if(sys.argv[2] == 'CNN'):
         testCNN = NeuralNetwork(input_size=(28,28,3), loss='bce', learning_rate=0.01, verbose=True)
         testCNN.addLayer('convolutional', 7, 'logistic', kernel_size=5)
         test_input = np.random.rand(28,28,3)
