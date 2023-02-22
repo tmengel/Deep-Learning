@@ -130,6 +130,7 @@ class ConvolutionalLayer:
         self.kernel_size = kernel_size
         self.learning_rate = learning_rate
         self.weights = weights
+        self.output_shape= (self.input_dim[0]-self.kernel_size+1, self.input_dim[1]-self.kernel_size+1, self.num_kernels)
         if weights is None:
             self.weights = np.random.rand(num_kernels, input_dim[2]*kernel_size*kernel_size+1)
         self.outputs = []
@@ -143,13 +144,16 @@ class ConvolutionalLayer:
         
     def calculate(self, input):
         self.outputs = np.zeros((self.input_dim[0]-self.kernel_size+1, self.input_dim[1]-self.kernel_size+1, self.num_kernels))
-        if input.shape != self.input_dim:
+        if input.shape != tuple(self.input_dim):
             raise ValueError(f'Input shape does not match the input dim, input shape: {input.shape}, input dim: {self.input_dim}')
+        #print(self.num_kernels)
         for i in range(self.num_kernels):
-            kernel = self.weights[i]
+           # print(self.input_dim[0],self.kernel_size)
             for j in range(self.input_dim[0]-self.kernel_size+1):
+                #print(self.input_dim[1]-self.kernel_size+1)
                 for k in range(self.input_dim[1]-self.kernel_size+1):
                     input_patch = input[j:j+self.kernel_size, k:k+self.kernel_size, :]
+                    #print("Input patch" ,input_patch.shape)
                     input_patch = input_patch.reshape(-1)
                     input_patch = np.append(input_patch, 1)
                     self.outputs[j, k, i] = self.neurons[i*(self.input_dim[0]-self.kernel_size+1)*(self.input_dim[1]-self.kernel_size+1)+j*(self.input_dim[1]-self.kernel_size+1)+k].calculate(input_patch)
@@ -165,115 +169,61 @@ class MaxPoolingLayer:
     '''
     def __init__(self, kernel_size, input_shape):
         print('Max Pooling Layer')
+        print(input_shape, kernel_size)
         self.number_of_neurons = (input_shape[0]-kernel_size+1)*(input_shape[1]-kernel_size+1)
         self.input_shape = input_shape
         self.kernel_size = kernel_size
         self.outputs = []
+        self.xPool = (self.input_shape[0]-self.kernel_size+1)
+        self.yPool = (self.input_shape[1]-self.kernel_size+1)
+        self.output_shape = (self.xPool, self.yPool)
         
     def calculate(self, input):
+        # print(input)
         print('Calculate Max Pooling')
-        xPool = (self.input_shape[0]-self.kernel_size+1)
-        yPool = (self.input_shape[1]-self.kernel_size+1)
-        for j in range(xPool):
-            l = []
-            for i in range(yPool):
-                l.append(np.amax(input[j:j+self.kernel_size,i:i+self.kernel_size]))
-            self.outputs.append(l)
-        return self.outputs
+        for k in range(self.input_shape[2]):
+            h = []
+            for j in range(self.xPool):
+                l = []
+                for i in range(self.yPool):
+                    l.append(np.amax(input[j:j+self.kernel_size,i:i+self.kernel_size,k]))
+                h.append(l)
+            self.outputs.append(h)
+        return np.array(self.outputs)
 
     
     def calculatewdeltas(self, next_layer_wdeltas):
         print('Calculate w deltas')
        
-
 class FlattenLayer:
     '''
     Flattening Layer
     '''
-    def __init__(self):
+    def __init__(self,input_shape):
         print('Flatten Layer')
         self.outputs = None
+        self.inputs = None
+        self.input_shape = input_shape
+        self.output_shape = np.prod(input_shape)
         
     def calculate(self, input):
         print('Calculate Flatten')
+        self.inputs = input
         self.outputs = input.flatten()
         return self.outputs
         
 class NeuralNetwork:
     '''
     Class for a neural network to manage the layers and the training
-    '''
-    # def __init__(self, num_of_layers, num_of_neurons, input_size, activation, loss, output_size=1, learning_rate=0.1, weights=None,verbose=False):
-    #     # Initialize the neural network with the following parameters
-    #     self.num_of_layers = num_of_layers # Number of layers in the neural network
-    #     self.num_of_neurons = num_of_neurons  # Number of neurons in each layer
-    #     # Number of neurons in each layer can be a list of integers
-    #     if type(num_of_neurons) != list:
-    #         raise ValueError(f'Number of neurons must be a list, not {type(num_of_neurons)}')
-    #     # Number of neurons in each layer must match the number of layers
-    #     if len(num_of_neurons) != num_of_layers:
-    #         raise ValueError(f'Number of neurons does not match the number of layers, neurons: {len(num_of_neurons)}, layers: {num_of_layers}')
-        
-    #     self.input_size = input_size # Number of inputs to the neural network
-    #     self.activation = activation # Activation function
-    #     # Activation function can be either 'linear' or 'logistic'
-    #     if type(activation) != list: # If activation function is not a list, use the same activation function for all layers
-    #         print('Constant activation function for all layers')
-    #         self.activation = []
-    #         for i in range(num_of_layers):
-    #             self.activation.append(activation)
-    #         self.activation.append(activation)
-    #     if len(self.activation) != num_of_layers + 1: # If activation function is a list, check if the number of activation functions matches the number of layers
-    #         if len(self.activation) == num_of_layers: # If the number of activation functions is one less than the number of layers, use the last activation function for the output layer
-    #             print("Output layer activation function not specified, using previous activation function")
-    #             self.activation.append(activation[-1])
-    #         else:# If the number of activation functions does not match the number of layers, raise an error
-    #             print("Activation function not specified for all layers, using previous activation function")
-    #             for i in range(num_of_layers - len(self.activation)):
-    #                 self.activation.append(activation[-1])
-             
-    #     self.loss = loss # Loss function
-    #     if loss not in ['mse', 'bce']: # Check if the loss function is supported
-    #         raise ValueError(f'Loss function {loss} not supported')
-        
-    #     self.output_size = output_size # Number of outputs from the neural network
-    #     self.learning_rate = learning_rate # Learning rate
-    #     self.architecture = [input_size] + num_of_neurons + [output_size] # Architecture of the neural network
-    #     # Weights are initialized randomly if not provided
-    #     if weights is None:
-    #         weights = []
-    #         for i in range(len(self.architecture) - 1):
-    #             weights.append(np.random.rand(self.architecture[i+1], self.architecture[i]+1))   # Initialize the weights randomly
-    #     self.weights = weights          
-    #     # Initialize the layers in the neural network 
-    #     self.layers = []
-    #     for i in range(num_of_layers):
-    #         weight = weights[i]
-    #         neurons = weight.shape[0]# Number of neurons in the layer
-    #         inputdim = weight.shape[1]# Number of inputs to the layer
-    #         if neurons != num_of_neurons[i]:# Check if the number of neurons in the layer matches the number of neurons in the weights
-    #             raise ValueError(f'Number of neurons in layer {i} does not match the dim of weights, neurons: {neurons}, weights dim: {num_of_neurons[i]}')
-    #         self.layers.append(Layer(neuron_num=neurons, activation=activation[i], input_num=inputdim, learning_rate=learning_rate, weights=weight, verbose=verbose)) 
-    #     # Initialize the output layer
-    #     self.layers.append(Layer(neuron_num=weights[-1].shape[0], activation=activation[-1], input_num=weights[-1].shape[1], learning_rate=learning_rate, weights=weights[-1], verbose=verbose))
-    #     # Initialize the outputs of the neural network
-    #     self.outputs = []
-        
-    #     if verbose: # Print the architecture of the neural network
-    #         print('Initialized Neural Network with the following architecture:')
-    #         print(f'Input Size: {input_size}, Output Size: {output_size}, Hidden Layers: {num_of_layers}')
-    #         print(f'Neurons per Hidden Layer: {num_of_neurons}')
-    #         print(f'Activation Function: {activation}, Loss Function: {loss}')
-    #         print(f'Learning Rate: {learning_rate}')
-    #         print(f'Weights: {weights}')
-    #         for weight in self.weights:
-    #             print(weight.shape)
-           
+    '''        
 
     def __init__(self, input_size, loss, learning_rate=0.1,verbose=False):
         # Initialize the neural network with the following parameters
         self.num_of_layers = 0 # Number of layers in the neural network
-        self.input_size = input_size # Number of inputs to the neural network
+        if type(input_size) is not int: # Check if the input size is an integer
+            input_size.append(1)
+            
+        self.input_size = np.array(input_size) # Number of inputs to the neural network
         if loss not in ['mse', 'bce']: # Check if the loss function is supported
             raise ValueError(f'Loss function {loss} not supported')
         self.loss = loss # Loss function
@@ -290,7 +240,7 @@ class NeuralNetwork:
             print('Initialized Neural Network with the following architecture:')
             print(f'Input Size: {input_size}, Loss: {loss}, Learning Rate: {learning_rate}')
     
-    def addLayer(self, layer_type, num_of_neurons, activation, kernel_size=1, weights=None):
+    def addLayer(self, layer_type, num_of_neurons=0, activation="linear", kernel_size=1, weights=None):
         self.num_of_layers += 1
         self.num_of_neurons.append(num_of_neurons)
         self.layer_types.append(layer_type)
@@ -302,22 +252,33 @@ class NeuralNetwork:
         if layer_type == 'fullyconnected':
             print('Adding Fully Connected Layer')
             self.layers.append(FullyConnectedLayer(num_of_neurons, activation,self.architecture[-1]+1, self.learning_rate, weights))
+            self.architecture.append(num_of_neurons)
         elif layer_type == 'convolutional':
             self.layers.append(ConvolutionalLayer(num_of_neurons, kernel_size, activation, self.architecture[-1], self.learning_rate, weights))
+            self.architecture.append(self.layers[-1].output_shape)
             print('Adding Convolutional Layer')
         elif layer_type == 'maxpooling':
+            print(self.architecture)
             self.layers.append(MaxPoolingLayer(kernel_size,self.architecture[-1]))
+            self.architecture.append(self.layers[-1].output_shape)
             print('Adding Max Pooling Layer')
         elif layer_type == 'flatten':
-            self.layers.append(FlattenLayer())
+            self.layers.append(FlattenLayer(self.architecture[-1]))
+            self.architecture.append(self.layers[-1].output_shape)
             print('Adding Flatten Layer')
         else:
             raise ValueError(f'Layer type {layer_type} not supported')
-        self.architecture.append(num_of_neurons)
+       
             
      # Calculate the output of the neural network 
     def calculate(self,X):
-        input = X
+        input = np.array(X)
+        #print(input.shape)
+        #print(input[0])
+        if self.input_size.shape != input.shape: # Check if the input size is an integer
+           input = input.reshape(self.input_size)
+        #print(input[0])
+        # return
         for layer in self.layers:
             # input = np.append(input, 1) # Append a 1 to the input to account for the bias
             output = layer.calculate(input)# Calculate the output of the layer
