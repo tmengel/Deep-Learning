@@ -60,6 +60,8 @@ class Neuron:
     def calcpartialderivative(self, wtimesdelta):
         # print('calcpartialderivative') 
         delta = wtimesdelta*self.activationderivative()
+        # print('delta', delta)
+        # print('inputs', self.inputs)
         self.dW = self.inputs*delta #Calculate the partial derivative for each weight
         return delta*self.weights
                
@@ -131,9 +133,12 @@ class ConvolutionalLayer:
         self.learning_rate = learning_rate
         self.weights = weights
         self.output_shape= (self.input_dim[0]-self.kernel_size+1, self.input_dim[1]-self.kernel_size+1, self.num_kernels)
+        self.xPool = self.output_shape[0]
+        self.yPool = self.output_shape[1]
         if weights is None:
             self.weights = np.random.rand(num_kernels, input_dim[2]*kernel_size*kernel_size+1)
         self.outputs = []
+        
         self.neurons = []
         for i in range(num_kernels):
             weight = self.weights[i]
@@ -143,26 +148,39 @@ class ConvolutionalLayer:
                 self.neurons.append(Neuron(input_dim=inputdim, activation=activation, learning_rate=learning_rate, weights=weight))
         
     def calculate(self, input):
-        self.outputs = np.zeros((self.input_dim[0]-self.kernel_size+1, self.input_dim[1]-self.kernel_size+1, self.num_kernels))
+        self.outputs = np.zeros((self.xPool, self.yPool, self.num_kernels))
         if input.shape != tuple(self.input_dim):
             raise ValueError(f'Input shape does not match the input dim, input shape: {input.shape}, input dim: {self.input_dim}')
         #print(self.num_kernels)
         for i in range(self.num_kernels):
-           # print(self.input_dim[0],self.kernel_size)
-            for j in range(self.input_dim[0]-self.kernel_size+1):
-                #print(self.input_dim[1]-self.kernel_size+1)
-                for k in range(self.input_dim[1]-self.kernel_size+1):
+            for j in range(self.xPool):
+                for k in range(self.yPool):
                     input_patch = input[j:j+self.kernel_size, k:k+self.kernel_size, :]
-                    #print("Input patch" ,input_patch.shape)
                     input_patch = input_patch.reshape(-1)
                     input_patch = np.append(input_patch, 1)
-                    self.outputs[j, k, i] = self.neurons[i*(self.input_dim[0]-self.kernel_size+1)*(self.input_dim[1]-self.kernel_size+1)+j*(self.input_dim[1]-self.kernel_size+1)+k].calculate(input_patch)
+                    self.outputs[j, k, i] = self.neurons[i*(self.xPool)*(self.yPool)+j*(self.yPool)+k].calculate(input_patch)
         return self.outputs
     
-    def calculatewdeltas(self, next_delta):
+    def calculatewdeltas(self, dloss):
         print('Calculate w deltas')
-        #deltaw = np.zeros(self.weights.shape)
-        
+        dLossdOut = np.zeros(self.input_dim)
+        #print(dLossdOut.shape)
+        dloss = np.array(dloss)
+        #print(dloss[0,0])
+        #print(self.neurons[0].calcpartialderivative(dloss[0,0]))
+        for i in range(self.num_kernels):
+            for j in range(self.xPool):
+                for k in range(self.yPool):
+                    dLossdOut[j, k, i] += np.sum(self.neurons[i*(self.xPool)*(self.yPool)+j*(self.yPool)+k].calcpartialderivative(dloss[j,k]))
+                    self.neurons[i*(self.xPool)*(self.yPool)+j*(self.yPool)+k].updateweight()
+                    
+        #print(dLossdOut)
+        dLossdOutSingle= np.zeros((dLossdOut.shape[0], dLossdOut.shape[1]))
+        for i in range(self.num_kernels):
+            dLossdOutSingle += dLossdOut[:, :, i]
+        #print(dLossdOutSingle.shape)
+        return dLossdOutSingle
+               
 class MaxPoolingLayer:
     '''
     Max Pooling Layer
@@ -170,30 +188,50 @@ class MaxPoolingLayer:
     def __init__(self, kernel_size, input_shape):
         print('Max Pooling Layer')
         print(input_shape, kernel_size)
-        self.number_of_neurons = (input_shape[0]-kernel_size+1)*(input_shape[1]-kernel_size+1)
+        self.number_of_neurons = ((input_shape[0]-kernel_size+1)*(input_shape[1]-kernel_size+1))/kernel_size
         self.input_shape = input_shape
         self.kernel_size = kernel_size
         self.outputs = []
-        self.xPool = (self.input_shape[0]-self.kernel_size+1)
-        self.yPool = (self.input_shape[1]-self.kernel_size+1)
+        self.stride = kernel_size
+        self.xPool = ((self.input_shape[0]-self.kernel_size)//self.stride+1)
+        self.yPool = ((self.input_shape[1]-self.kernel_size)//self.stride+1)
         self.output_shape = (self.xPool, self.yPool)
+        self.maxArgs = np.zeros(input_shape)
         
     def calculate(self, input):
         # print(input)
         print('Calculate Max Pooling')
+        print(self.maxArgs.shape)
+        print(input.shape)
         for k in range(self.input_shape[2]):
             h = []
             for j in range(self.xPool):
                 l = []
                 for i in range(self.yPool):
-                    l.append(np.amax(input[j:j+self.kernel_size,i:i+self.kernel_size,k]))
+                    Maxl = np.amax(input[j*self.stride:j*self.stride+self.kernel_size,i*self.stride:i*self.stride+self.kernel_size,k])
+                    MaxlArg = np.argmax(input[j*self.stride:j*self.stride+self.kernel_size,i*self.stride:i*self.stride+self.kernel_size,k])
+                    MaxArgX_Rel = MaxlArg//self.kernel_size
+                    MaxlArgY_Rel = MaxlArg%self.kernel_size
+                    self.maxArgs[j*self.stride+MaxArgX_Rel,i*self.stride+MaxlArgY_Rel,k] = 1
+                    
+                    #self.maxArgs[j] = 1
+                    l.append(Maxl)
                 h.append(l)
             self.outputs.append(h)
         return np.array(self.outputs)
 
     
-    def calculatewdeltas(self, next_layer_wdeltas):
-        print('Calculate w deltas')
+    def calculatewdeltas(self, dloss):
+        dloss = np.array(dloss)
+        deltaw = np.zeros((self.input_shape[0], self.input_shape[1]))
+        for k in range(self.input_shape[2]):
+            for j in range(self.xPool):
+                for i in range(self.yPool):
+                    self.maxArgs[j*self.stride:j*self.stride+self.kernel_size,i*self.stride:i*self.stride+self.kernel_size,k]*=dloss[j,i]
+        for i in range(self.input_shape[2]):
+            deltaw += self.maxArgs[:, :, i]
+        return deltaw            
+   
        
 class FlattenLayer:
     '''
@@ -211,6 +249,12 @@ class FlattenLayer:
         self.inputs = input
         self.outputs = input.flatten()
         return self.outputs
+    
+    def calculatewdeltas(self,dloss):
+        print(dloss)
+        deltaw = np.reshape(dloss, self.input_shape)
+        print(deltaw)
+        return deltaw
         
 class NeuralNetwork:
     '''
