@@ -141,8 +141,12 @@ class ConvolutionalLayer:
         
         self.neurons = []
         for i in range(num_kernels):
-            weight = self.weights[i]
-            weight = np.append(weight.flatten(),0)
+            weight = None
+            if weights is None:
+                weight = self.weights[i]
+                weight = np.append(weight.flatten(),0)
+            else:
+                weight = self.weights[i]
             inputdim = weight.shape[-1]
             num_neurons = (input_dim[0]-kernel_size+1)*(input_dim[1]-kernel_size+1)
             for j in range(num_neurons):
@@ -168,7 +172,7 @@ class ConvolutionalLayer:
         #print(dLossdOut.shape)
         dloss = np.array(dloss)
         #print(dloss[0,0])
-        print(self.neurons[0].calcpartialderivative(dloss[0,0]))
+        # print(self.neurons[0].calcpartialderivative(dloss[0,0]))
         for i in range(self.num_kernels):
             for j in range(self.xPool):
                 for k in range(self.yPool):
@@ -395,14 +399,29 @@ class NeuralNetwork:
                 print(f'Epoch: {epoch}, Loss: {loss}') # Print the loss
          
 if __name__=="__main__": # Run the main function
-    learningRate = float(sys.argv[1])
-    print('Using a learning rate of',learningRate)
     if (len(sys.argv)<3):
         print('a good place to test different parts of your code')
     
-    if(sys.argv[2] == 'CNN'):
-        testCNN = NeuralNetwork(input_size=(28,28,3), loss='bce', learning_rate=0.01, verbose=True)
-        testCNN.addLayer('convolutional', 7, 'logistic', kernel_size=5)
-        test_input = np.random.rand(28,28,3)
-        output = testCNN.calculate(test_input)
-        output.shape
+    learningRate = float(sys.argv[1])
+    print('Using a learning rate of',learningRate)
+
+    from parameters import generateExample2
+    print('Example 2')
+    # Call weight/data generating function
+    l1k1,l1k2,l1b1,l1b2,l2k1,l2b,l3,l3b,input, output = generateExample2()
+    w1k1 = np.append(l1k1.flatten(),l1b1)
+    w1k2 = np.append(l1k2.flatten(),l1b2)
+    w1 = np.array([w1k1,w1k2])
+    print('w1\n',w1)
+    w2 = np.append(l2k1.flatten(),l2b)
+    w2 = np.array([w2])
+    print('w2\n',w2)
+    w3 = np.append(l3.flatten(),l3b)
+    w3 = np.array([w3])
+    print('w3\n',w3)
+    
+    testCNN = NeuralNetwork(input_size=[7,7], loss='mse', learning_rate=0.01, verbose=True)
+    testCNN.addLayer('convolutional',2,'linear',kernel_size=3,weights=w1)
+    testCNN.addLayer('convolutional',1,'linear',kernel_size=3,weights=w2)
+    testCNN.addLayer('flatten',1,'linear')
+    testCNN.addLayer('fullyconnected',1,'linear',weights=w3)
