@@ -142,6 +142,7 @@ class ConvolutionalLayer:
         self.neurons = []
         for i in range(num_kernels):
             weight = self.weights[i]
+            weight = np.append(weight.flatten(),0)
             inputdim = weight.shape[-1]
             num_neurons = (input_dim[0]-kernel_size+1)*(input_dim[1]-kernel_size+1)
             for j in range(num_neurons):
@@ -167,14 +168,14 @@ class ConvolutionalLayer:
         #print(dLossdOut.shape)
         dloss = np.array(dloss)
         #print(dloss[0,0])
-        #print(self.neurons[0].calcpartialderivative(dloss[0,0]))
+        print(self.neurons[0].calcpartialderivative(dloss[0,0]))
         for i in range(self.num_kernels):
             for j in range(self.xPool):
                 for k in range(self.yPool):
                     dLossdOut[j, k, i] += np.sum(self.neurons[i*(self.xPool)*(self.yPool)+j*(self.yPool)+k].calcpartialderivative(dloss[j,k]))
                     self.neurons[i*(self.xPool)*(self.yPool)+j*(self.yPool)+k].updateweight()
                     
-        #print(dLossdOut)
+        print('dloss',dLossdOut.shape,'/n',dLossdOut)
         dLossdOutSingle= np.zeros((dLossdOut.shape[0], dLossdOut.shape[1]))
         for i in range(self.num_kernels):
             dLossdOutSingle += dLossdOut[:, :, i]
@@ -187,7 +188,7 @@ class MaxPoolingLayer:
     '''
     def __init__(self, kernel_size, input_shape):
         print('Max Pooling Layer')
-        print(input_shape, kernel_size)
+        # print(input_shape, kernel_size)
         self.number_of_neurons = ((input_shape[0]-kernel_size+1)*(input_shape[1]-kernel_size+1))/kernel_size
         self.input_shape = input_shape
         self.kernel_size = kernel_size
@@ -201,8 +202,8 @@ class MaxPoolingLayer:
     def calculate(self, input):
         # print(input)
         print('Calculate Max Pooling')
-        print(self.maxArgs.shape)
-        print(input.shape)
+        # print(self.maxArgs.shape)
+        # print(input.shape)
         for k in range(self.input_shape[2]):
             h = []
             for j in range(self.xPool):
