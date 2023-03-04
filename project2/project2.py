@@ -160,6 +160,7 @@ class ConvolutionalLayer:
         for i in range(self.num_kernels):
             for j in range(self.xPool):
                 for k in range(self.yPool):
+                    
                     input_patch = input[j:j+self.kernel_size, k:k+self.kernel_size, :]
                     input_patch = input_patch.reshape(-1)
                     input_patch = np.append(input_patch, 1)
@@ -171,6 +172,7 @@ class ConvolutionalLayer:
         dLossdOut = np.zeros(self.input_dim)
         print(dLossdOut.shape)
         print(dloss.shape)
+        print(self.num_kernels)
         #print(dLossdOut.shape)
         dloss = np.array(dloss)
         #print(dloss[0,0])
@@ -179,15 +181,16 @@ class ConvolutionalLayer:
         for i in range(self.num_kernels):
             for j in range(self.xPool):
                 for k in range(self.yPool):
-                    dLossdOut[j, k, i] += np.sum(self.neurons[i*(self.xPool)*(self.yPool)+j*(self.yPool)+k].calcpartialderivative(dloss[j,k]))
+                    print()
+                    dLossdOut[j, k, :] += np.sum(self.neurons[i*(self.xPool)*(self.yPool)+j*(self.yPool)+k].calcpartialderivative(dloss[j,k,i]))
                     self.neurons[i*(self.xPool)*(self.yPool)+j*(self.yPool)+k].updateweight()
                     
         # print('dloss',dLossdOut.shape,'/n',dLossdOut)
-        dLossdOutSingle= np.zeros((dLossdOut.shape[0], dLossdOut.shape[1]))
-        for i in range(self.num_kernels):
-            dLossdOutSingle += dLossdOut[:, :, i]
+        # dLossdOutSingle= np.zeros((dLossdOut.shape[0], dLossdOut.shape[1]))
+        # for i in range(self.num_kernels):
+        #     dLossdOutSingle += dLossdOut[:, :, i]
         #print(dLossdOutSingle.shape)
-        return dLossdOutSingle
+        return dLossdOut
                
 class MaxPoolingLayer:
     '''
@@ -430,10 +433,16 @@ if __name__=="__main__": # Run the main function
         #print('w1\n',w1)
         w2 = np.append(l2k1.flatten(),l2b)
         w2 = np.array([w2])
-        #print('w2\n',w2)
+        # print('w2\n',w2)
         w3 = np.append(l3.flatten(),l3b)
         w3 = np.array([w3])
         #print('w3\n',w3)
+        
+        #save initial values
+        testCNNw1k1 = w1k1
+        testCNNw1k2 = w1k2
+        testCNNw2 = w2
+        testCNNw3 = w3
         
         testCNN = NeuralNetwork(input_size=[7,7], loss='mse', learning_rate=learningRate, verbose=True)
         testCNN.addLayer('convolutional',2,'logistic',kernel_size=3,weights=w1)
@@ -456,6 +465,15 @@ if __name__=="__main__": # Run the main function
         #setting weights and bias of second layer.
         w2=l2k1.reshape(3,3,2,1)
        
+        tfCNNw1k1 = l1k1
+        tfCNNw1b1 = l1b1[0]        
+        tfCNNw1k2 = l1k2
+        tfCNNw1b2 = l1b2[0]
+        tfCNNw2k1 = l2k1
+        tfCNNw2b2 = l2b
+        tfCNNw3 = np.transpose(l3)
+        tfCNNb3 = l3b
+        
         model.layers[0].set_weights([w1,np.array([l1b1[0],l1b2[0]])]) #Shape of weight matrix is (w,h,input_channels,kernels)
         model.layers[1].set_weights([w2,l2b])
         model.layers[3].set_weights([np.transpose(l3),l3b])
@@ -475,23 +493,26 @@ if __name__=="__main__": # Run the main function
         # np.set_printoptions(precision=5)        
         # print('model output after:')
         # print(model.predict(img))
-        
-        #print testCNN values:
-        print("Value Comparison")
         np.set_printoptions(precision=5)
-        
+        print("Initial Comparision")
         print('1st convolutional layer, 1st kernel weights (bias):')
-        print(f'Custom CNN: {np.squeeze(testCNN.layers[0].weights[0][:-1])} \t ({np.squeeze(testCNN.layers[0].weights[0][-1]):.5f})')
+        print(f'Custom CNN: {np.squeeze(testCNNw1k1[:-1].reshape(tfCNNw1k1.shape))} \t ({testCNNw1k1[-1]:.5f})')
+        print(f'Keras CNN: {np.squeeze(tfCNNw1k1)} \t ({np.squeeze(tfCNNw1b1):.5f})')
+               
+        print("Value Comparison")
+        print('1st convolutional layer, 1st kernel weights (bias):')
+        print(f'Custom CNN: {np.squeeze(testCNN.layers[0].weights[0][:-1]).reshape(np.squeeze(model.get_weights()[0][:,:,0,0]).shape)} \t ({np.squeeze(testCNN.layers[0].weights[0][-1]):.5f})')
         print(f'Keras CNN: {np.squeeze(model.get_weights()[0][:,:,0,0])} \t ({np.squeeze(model.get_weights()[1][0]):.5f})')
         print('1st convolutional layer, 2nd kernel weights (bias):')
-        print(f'Custom CNN: {np.squeeze(testCNN.layers[0].weights[1][:-1])} \t ({np.squeeze(testCNN.layers[0].weights[1][-1]):.5f})')
+        print(f'Custom CNN: {np.squeeze(testCNN.layers[0].weights[1][:-1]).reshape(np.squeeze(model.get_weights()[0][:,:,0,1]).shape)} \t ({np.squeeze(testCNN.layers[0].weights[1][-1]):.5f})')
         print(f'Keras CNN: {np.squeeze(model.get_weights()[0][:,:,0,1])} \t ({np.squeeze(model.get_weights()[1][1]):.5f})')
         print('2nd convolutional layer weights (bias):')
-        print(f'Custom CNN: {np.squeeze(testCNN.layers[1].weights[0][:-1])} \t ({np.squeeze(testCNN.layers[1].weights[0][-1]):.5f})')
-        print(f'Keras CNN: {np.squeeze(model.get_weights()[2][:,:,0,0])} \t ({np.squeeze(model.get_weights()[3]):.5f})')
+        print(f'Custom CNN: {np.squeeze(testCNN.layers[1].weights[0][:-1]).reshape(np.squeeze(model.get_weights()[2][:,:,:,0]).shape)} \t ({np.squeeze(testCNN.layers[1].weights[0][-1]):.5f})')
+        print(f'Keras CNN: {np.squeeze(model.get_weights()[2][:,:,:,0])} \t ({np.squeeze(model.get_weights()[3]):.5f})')
         print('Fully connected layer weights (bias):')
         print(f'Custom CNN: {np.squeeze(testCNN.layers[3].weights[0][:-1])} \t ({np.squeeze(testCNN.layers[3].weights[0][-1]):.5f})')
         print(f'Keras CNN: {np.squeeze(model.get_weights()[4])} \t ({np.squeeze(model.get_weights()[5]):.5f})')
-           
+        
+        
 
 
