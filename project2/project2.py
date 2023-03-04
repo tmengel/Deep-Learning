@@ -427,7 +427,7 @@ if __name__=="__main__": # Run the main function
         
         print('Example 1')
         # Call weight/data generating function
-        l1k1,l1b1,l2k1,l2b,l3,l3b,input, output = generateExample1()
+        l1k1,l1b1,l3,l3b,input, output = generateExample1()
         w1k1 = np.append(l1k1.flatten(),l1b1)
         w1 = np.array([w1k1])
         #print('w1\n',w1)
@@ -440,27 +440,23 @@ if __name__=="__main__": # Run the main function
         testCNNw3 = w3
         
         testCNN = NeuralNetwork(input_size=[5,5], loss='mse', learning_rate=learningRate, verbose=True)
-        testCNN.addLayer('convolutional',2,'logistic',kernel_size=3,weights=w1)
+        testCNN.addLayer('convolutional',1,'logistic',kernel_size=3,weights=w1)
         testCNN.addLayer('flatten',0,'logistic')
         testCNN.addLayer('fullyconnected',1,'logistic',weights=w3)
 
         #Create a feed forward network
         model=Sequential()
         # Add convolutional layers, flatten, and fully connected layer
-        model.add(layers.Conv2D(2,3,input_shape=(5,5,1),activation='sigmoid')) 
+        model.add(layers.Conv2D(1,3,input_shape=(5,5,1),activation='sigmoid')) 
         model.add(layers.Flatten())
         model.add(layers.Dense(1,activation='sigmoid'))
         # Call weight/data generating function
         #setting weights and bias of first layer.
         l1k1=l1k1.reshape(3,3,1,1)
-        w1=np.concatenate((l1k1),axis=3)
-        #setting weights and bias of second layer.
-        w2=l2k1.reshape(3,3,2,1)
+        w1=l1k1
        
         tfCNNw1k1 = l1k1
         tfCNNw1b1 = l1b1[0]
-        tfCNNw2k1 = l2k1
-        tfCNNw2b2 = l2b
         tfCNNw3 = np.transpose(l3)
         tfCNNb3 = l3b
         
@@ -478,31 +474,23 @@ if __name__=="__main__": # Run the main function
         
         testCNN.train([input],[output],epochs=1)      
         output_custom = testCNN.calculate(input)  
-        #print needed values.
-        # np.set_printoptions(precision=5)        
-        # print('model output after:')
-        # print(model.predict(img))
+        
         np.set_printoptions(precision=5)
-        print("Initial Comparision")
-        print('1st convolutional layer, 1st kernel weights (bias):')
-        print(f'Custom CNN: {np.squeeze(testCNNw1k1[:-1].reshape(tfCNNw1k1.shape))} \t ({testCNNw1k1[-1]:.5f})')
-        print(f'Keras CNN: {np.squeeze(tfCNNw1k1)} \t ({np.squeeze(tfCNNw1b1):.5f})')
+        # print("Initial Comparision")
+        # print('1st convolutional layer, 1st kernel weights (bias):')
+        # print(f'Custom CNN: {np.squeeze(testCNNw1k1[:-1].reshape(tfCNNw1k1.shape))} \t ({testCNNw1k1[-1]:.5f})')
+        # print(f'Keras CNN: {np.squeeze(tfCNNw1k1)} \t ({np.squeeze(tfCNNw1b1):.5f})')
                
         print("Value Comparison")
         print('1st convolutional layer, 1st kernel weights (bias):')
         print(f'Custom CNN: {np.squeeze(testCNN.layers[0].weights[0][:-1]).reshape(np.squeeze(model.get_weights()[0][:,:,0,0]).shape)} \t ({np.squeeze(testCNN.layers[0].weights[0][-1]):.5f})')
         print(f'Keras CNN: {np.squeeze(model.get_weights()[0][:,:,0,0])} \t ({np.squeeze(model.get_weights()[1][0]):.5f})')
-        print('1st convolutional layer, 2nd kernel weights (bias):')
-        print(f'Custom CNN: {np.squeeze(testCNN.layers[0].weights[1][:-1]).reshape(np.squeeze(model.get_weights()[0][:,:,0,1]).shape)} \t ({np.squeeze(testCNN.layers[0].weights[1][-1]):.5f})')
-        print(f'Keras CNN: {np.squeeze(model.get_weights()[0][:,:,0,1])} \t ({np.squeeze(model.get_weights()[1][1]):.5f})')
-        print('2nd convolutional layer weights (bias):')
-        print(f'Custom CNN: {np.squeeze(testCNN.layers[1].weights[0][:-1]).reshape(np.squeeze(model.get_weights()[2][:,:,:,0]).shape)} \t ({np.squeeze(testCNN.layers[1].weights[0][-1]):.5f})')
-        print(f'Keras CNN: {np.squeeze(model.get_weights()[2][:,:,:,0])} \t ({np.squeeze(model.get_weights()[3]):.5f})')
         print('Fully connected layer weights (bias):')
-        print(f'Custom CNN: {np.squeeze(testCNN.layers[3].weights[0][:-1])} \t ({np.squeeze(testCNN.layers[3].weights[0][-1]):.5f})')
-        print(f'Keras CNN: {np.squeeze(model.get_weights()[4])} \t ({np.squeeze(model.get_weights()[5]):.5f})')
-
-
+        print(f'Custom CNN: {np.squeeze(testCNN.layers[2].weights[0][:-1])} \t ({np.squeeze(testCNN.layers[2].weights[0][-1]):.5f})')
+        print(f'Keras CNN: {np.squeeze(model.get_weights()[2])} \t ({np.squeeze(model.get_weights()[3]):.5f})')
+        print(f'Output Comparison')
+        print(f'Custom CNN: {np.squeeze(output_custom):.5f}')
+        print(f'Keras CNN: {np.squeeze(output_tf):.5f}')
     if sys.argv[2] == 'example2':
         from parameters import generateExample2
         
@@ -576,10 +564,10 @@ if __name__=="__main__": # Run the main function
         # print('model output after:')
         # print(model.predict(img))
         np.set_printoptions(precision=5)
-        print("Initial Comparision")
-        print('1st convolutional layer, 1st kernel weights (bias):')
-        print(f'Custom CNN: {np.squeeze(testCNNw1k1[:-1].reshape(tfCNNw1k1.shape))} \t ({testCNNw1k1[-1]:.5f})')
-        print(f'Keras CNN: {np.squeeze(tfCNNw1k1)} \t ({np.squeeze(tfCNNw1b1):.5f})')
+        # print("Initial Comparision")
+        # print('1st convolutional layer, 1st kernel weights (bias):')
+        # print(f'Custom CNN: {np.squeeze(testCNNw1k1[:-1].reshape(tfCNNw1k1.shape))} \t ({testCNNw1k1[-1]:.5f})')
+        # print(f'Keras CNN: {np.squeeze(tfCNNw1k1)} \t ({np.squeeze(tfCNNw1b1):.5f})')
                
         print("Value Comparison")
         print('1st convolutional layer, 1st kernel weights (bias):')
@@ -594,6 +582,11 @@ if __name__=="__main__": # Run the main function
         print('Fully connected layer weights (bias):')
         print(f'Custom CNN: {np.squeeze(testCNN.layers[3].weights[0][:-1])} \t ({np.squeeze(testCNN.layers[3].weights[0][-1]):.5f})')
         print(f'Keras CNN: {np.squeeze(model.get_weights()[4])} \t ({np.squeeze(model.get_weights()[5]):.5f})')
+        print(f'Output Comparison')
+        print(f'Custom CNN: {np.squeeze(output_custom)}')
+        print(f'Keras CNN: {np.squeeze(output_tf)}')
+        
+        
         
     if sys.argv[2] == 'example3':
         from parameters import generateExample3
@@ -657,14 +650,11 @@ if __name__=="__main__": # Run the main function
         print('starting second calc')
         output_custom = testCNN.calculate(input)  
         #print needed values.
-        # np.set_printoptions(precision=5)        
-        # print('model output after:')
-        # print(model.predict(img))
         np.set_printoptions(precision=5)
-        print("Initial Comparision")
-        print('1st convolutional layer, 1st kernel weights (bias):')
-        print(f'Custom CNN: {np.squeeze(testCNNw1k1[:-1].reshape(tfCNNw1k1.shape))} \t ({testCNNw1k1[-1]:.5f})')
-        print(f'Keras CNN: {np.squeeze(tfCNNw1k1)} \t ({np.squeeze(tfCNNw1b1):.5f})')
+        # print("Initial Comparision")
+        # print('1st convolutional layer, 1st kernel weights (bias):')
+        # print(f'Custom CNN: {np.squeeze(testCNNw1k1[:-1].reshape(tfCNNw1k1.shape))} \t ({testCNNw1k1[-1]:.5f})')
+        # print(f'Keras CNN: {np.squeeze(tfCNNw1k1)} \t ({np.squeeze(tfCNNw1b1):.5f})')
                
         print("Value Comparison")
         print('1st convolutional layer, 1st kernel weights (bias):')
@@ -675,8 +665,10 @@ if __name__=="__main__": # Run the main function
         print(f'Keras CNN: {np.squeeze(model.get_weights()[0][:,:,0,1])} \t ({np.squeeze(model.get_weights()[1][1]):.5f})')
         print('Fully connected layer weights (bias):')
         print(f'Custom CNN: {np.squeeze(testCNN.layers[3].weights[0][:-1])} \t ({np.squeeze(testCNN.layers[3].weights[0][-1]):.5f})')
-        # print(f'Keras CNN: {np.squeeze(model.get_weights()[3])} \t ({np.squeeze(model.get_weights()[4]):.5f})')
-        
+        print(f'Keras CNN: {np.squeeze(model.get_weights()[2])} \t ({np.squeeze(model.get_weights()[3]):.5f})')
+        print(f'Output Comparison')
+        print(f'Custom CNN: {np.squeeze(output_custom):.5f}')
+        print(f'Keras CNN: {np.squeeze(output_tf):.5f}')
         
 
 
