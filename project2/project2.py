@@ -166,7 +166,7 @@ class ConvolutionalLayer:
                     self.outputs[j, k, i] = self.neurons[i*(self.xPool)*(self.yPool)+j*(self.yPool)+k].calculate(input_patch)
         return self.outputs
     
-    def calculatewdeltas(self, dloss):
+    def calcwdeltas(self, dloss):
         print('Calculate w deltas')
         dLossdOut = np.zeros(self.input_dim)
         #print(dLossdOut.shape)
@@ -226,7 +226,7 @@ class MaxPoolingLayer:
         return np.array(self.outputs)
 
     
-    def calculatewdeltas(self, dloss):
+    def calcwdeltas(self, dloss):
         dloss = np.array(dloss)
         deltaw = np.zeros((self.input_shape[0], self.input_shape[1]))
         for k in range(self.input_shape[2]):
@@ -236,8 +236,7 @@ class MaxPoolingLayer:
         for i in range(self.input_shape[2]):
             deltaw += self.maxArgs[:, :, i]
         return deltaw            
-   
-       
+         
 class FlattenLayer:
     '''
     Flattening Layer
@@ -255,7 +254,7 @@ class FlattenLayer:
         self.outputs = input.flatten()
         return self.outputs
     
-    def calculatewdeltas(self,dloss):
+    def calcwdeltas(self,dloss):
         print(dloss)
         deltaw = np.reshape(dloss, self.input_shape)
         print(deltaw)
@@ -382,7 +381,8 @@ class NeuralNetwork:
     
     # Train the neural network with the given inputs and outputs
     def train(self, X, Y, epochs=1, verbose=False):
-        
+        X=np.array(X)
+        Y=np.array(Y)
         for epoch in range(epochs): # Iterate through the epochs
             loss = 0 # Initialize the loss
             yhat = [] # Initialize the output of the neural network
@@ -404,24 +404,86 @@ if __name__=="__main__": # Run the main function
     
     learningRate = float(sys.argv[1])
     print('Using a learning rate of',learningRate)
+    if sys.argv[2] == 'example2':
+        print('Example 2')
+        
+        from tensorflow import keras
+        from tensorflow.keras.models import Sequential
+        from tensorflow.keras import layers
+        from tensorflow.keras import optimizers
+        from parameters import generateExample2
+        
+        print('Example 2')
+        # Call weight/data generating function
+        l1k1,l1k2,l1b1,l1b2,l2k1,l2b,l3,l3b,input, output = generateExample2()
+        w1k1 = np.append(l1k1.flatten(),l1b1)
+        w1k2 = np.append(l1k2.flatten(),l1b2)
+        w1 = np.array([w1k1,w1k2])
+        #print('w1\n',w1)
+        w2 = np.append(l2k1.flatten(),l2b)
+        w2 = np.array([w2])
+        #print('w2\n',w2)
+        w3 = np.append(l3.flatten(),l3b)
+        w3 = np.array([w3])
+        #print('w3\n',w3)
+        
+        testCNN = NeuralNetwork(input_size=[7,7], loss='mse', learning_rate=learningRate, verbose=True)
+        testCNN.addLayer('convolutional',2,'logistic',kernel_size=3,weights=w1)
+        testCNN.addLayer('convolutional',1,'logistic',kernel_size=3,weights=w2)
+        testCNN.addLayer('flatten',1,'logistic')
+        testCNN.addLayer('fullyconnected',1,'logistic',weights=w3)
 
-    from parameters import generateExample2
-    print('Example 2')
-    # Call weight/data generating function
-    l1k1,l1k2,l1b1,l1b2,l2k1,l2b,l3,l3b,input, output = generateExample2()
-    w1k1 = np.append(l1k1.flatten(),l1b1)
-    w1k2 = np.append(l1k2.flatten(),l1b2)
-    w1 = np.array([w1k1,w1k2])
-    print('w1\n',w1)
-    w2 = np.append(l2k1.flatten(),l2b)
-    w2 = np.array([w2])
-    print('w2\n',w2)
-    w3 = np.append(l3.flatten(),l3b)
-    w3 = np.array([w3])
-    print('w3\n',w3)
+        #Create a feed forward network
+        model=Sequential()
+        # Add convolutional layers, flatten, and fully connected layer
+        model.add(layers.Conv2D(2,3,input_shape=(7,7,1),activation='sigmoid')) 
+        model.add(layers.Conv2D(1,3,activation='sigmoid'))
+        model.add(layers.Flatten())
+        model.add(layers.Dense(1,activation='sigmoid'))
+        # Call weight/data generating function
+        #setting weights and bias of first layer.
+        l1k1=l1k1.reshape(3,3,1,1)
+        l1k2=l1k2.reshape(3,3,1,1)
+        w1=np.concatenate((l1k1,l1k2),axis=3)
+        #setting weights and bias of second layer.
+        w2=l2k1.reshape(3,3,2,1)
+       
+        model.layers[0].set_weights([w1,np.array([l1b1[0],l1b2[0]])]) #Shape of weight matrix is (w,h,input_channels,kernels)
+        model.layers[1].set_weights([w2,l2b])
+        model.layers[3].set_weights([np.transpose(l3),l3b])
+        
+        #Setting input. Tensor flow is expecting a 4d array since the first dimension is the batch size (here we set it to one), and third dimension is channels
+        img=np.expand_dims(input,axis=(0,3))
+        print(img.shape)
     
-    testCNN = NeuralNetwork(input_size=[7,7], loss='mse', learning_rate=0.01, verbose=True)
-    testCNN.addLayer('convolutional',2,'linear',kernel_size=3,weights=w1)
-    testCNN.addLayer('convolutional',1,'linear',kernel_size=3,weights=w2)
-    testCNN.addLayer('flatten',1,'linear')
-    testCNN.addLayer('fullyconnected',1,'linear',weights=w3)
+        sgd = optimizers.SGD(learning_rate=learningRate)
+        model.compile(loss='MSE', optimizer=sgd, metrics=['accuracy'])
+        history=model.train_on_batch(img,output)
+        output_tf = model.predict(img)
+        
+        testCNN.train([input],[output],epochs=1)      
+        output_custom = testCNN.calculate(input)  
+        #print needed values.
+        # np.set_printoptions(precision=5)        
+        # print('model output after:')
+        # print(model.predict(img))
+        
+        #print testCNN values:
+        print("Value Comparison")
+        np.set_printoptions(precision=5)
+        
+        print('1st convolutional layer, 1st kernel weights (bias):')
+        print(f'Custom CNN: {np.squeeze(testCNN.layers[0].weights[0][:-1])} \t ({np.squeeze(testCNN.layers[0].weights[0][-1]):.5f})')
+        print(f'Keras CNN: {np.squeeze(model.get_weights()[0][:,:,0,0])} \t ({np.squeeze(model.get_weights()[1][0]):.5f})')
+        print('1st convolutional layer, 2nd kernel weights (bias):')
+        print(f'Custom CNN: {np.squeeze(testCNN.layers[0].weights[1][:-1])} \t ({np.squeeze(testCNN.layers[0].weights[1][-1]):.5f})')
+        print(f'Keras CNN: {np.squeeze(model.get_weights()[0][:,:,0,1])} \t ({np.squeeze(model.get_weights()[1][1]):.5f})')
+        print('2nd convolutional layer weights (bias):')
+        print(f'Custom CNN: {np.squeeze(testCNN.layers[1].weights[0][:-1])} \t ({np.squeeze(testCNN.layers[1].weights[0][-1]):.5f})')
+        print(f'Keras CNN: {np.squeeze(model.get_weights()[2][:,:,0,0])} \t ({np.squeeze(model.get_weights()[3]):.5f})')
+        print('Fully connected layer weights (bias):')
+        print(f'Custom CNN: {np.squeeze(testCNN.layers[3].weights[0][:-1])} \t ({np.squeeze(testCNN.layers[3].weights[0][-1]):.5f})')
+        print(f'Keras CNN: {np.squeeze(model.get_weights()[4])} \t ({np.squeeze(model.get_weights()[5]):.5f})')
+           
+
+
