@@ -169,17 +169,20 @@ class ConvolutionalLayer:
     def calcwdeltas(self, dloss):
         print('Calculate w deltas')
         dLossdOut = np.zeros(self.input_dim)
+        print(dLossdOut.shape)
+        print(dloss.shape)
         #print(dLossdOut.shape)
         dloss = np.array(dloss)
         #print(dloss[0,0])
         # print(self.neurons[0].calcpartialderivative(dloss[0,0]))
+        # for i in range(self.num_kernels):
         for i in range(self.num_kernels):
             for j in range(self.xPool):
                 for k in range(self.yPool):
                     dLossdOut[j, k, i] += np.sum(self.neurons[i*(self.xPool)*(self.yPool)+j*(self.yPool)+k].calcpartialderivative(dloss[j,k]))
                     self.neurons[i*(self.xPool)*(self.yPool)+j*(self.yPool)+k].updateweight()
                     
-        print('dloss',dLossdOut.shape,'/n',dLossdOut)
+        # print('dloss',dLossdOut.shape,'/n',dLossdOut)
         dLossdOutSingle= np.zeros((dLossdOut.shape[0], dLossdOut.shape[1]))
         for i in range(self.num_kernels):
             dLossdOutSingle += dLossdOut[:, :, i]
@@ -251,11 +254,14 @@ class FlattenLayer:
     def calculate(self, input):
         print('Calculate Flatten')
         self.inputs = input
+        # print(input.shape)
         self.outputs = input.flatten()
+        # print(self.outputs.shape)
         return self.outputs
     
     def calcwdeltas(self,dloss):
-        print(dloss)
+        # print(dloss)
+        dloss = dloss[:-1]
         deltaw = np.reshape(dloss, self.input_shape)
         print(deltaw)
         return deltaw
@@ -389,8 +395,10 @@ class NeuralNetwork:
             ytest = [] # Initialize the ground truth
             for i in range(len(X)): # Iterate through the training examples
                 yh = self.calculate(X[i])     # Calculate the output of the neural network
+                # print('Output',yh)
                 dloss = self.lossderiv(yh, Y[i]) # Calculate the derivative of the loss function with respect to the output of the neural network
                 for j in range(len(self.layers)-1, -1, -1): # Iterate through the layers in reverse order
+                    # print('Layer',j)
                     dloss = self.layers[j].calcwdeltas(dloss)  # Calculate the derivative of the loss function with respect to the weights of the layer  
                 yhat.append(self.calculate(X[i])) # Calculate the output of the neural network
                 ytest.append(Y[i]) # Calculate the ground truth
@@ -430,7 +438,7 @@ if __name__=="__main__": # Run the main function
         testCNN = NeuralNetwork(input_size=[7,7], loss='mse', learning_rate=learningRate, verbose=True)
         testCNN.addLayer('convolutional',2,'logistic',kernel_size=3,weights=w1)
         testCNN.addLayer('convolutional',1,'logistic',kernel_size=3,weights=w2)
-        testCNN.addLayer('flatten',1,'logistic')
+        testCNN.addLayer('flatten',0,'logistic')
         testCNN.addLayer('fullyconnected',1,'logistic',weights=w3)
 
         #Create a feed forward network
