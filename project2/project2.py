@@ -58,10 +58,7 @@ class Neuron:
       
     #This method calculates the partial derivative for each weight and returns the delta*w to be used in the previous layer
     def calcpartialderivative(self, wtimesdelta):
-        # print('calcpartialderivative') 
         delta = wtimesdelta*self.activationderivative()
-        # print('delta', delta)
-        # print('inputs', self.inputs)
         self.dW = self.inputs*delta #Calculate the partial derivative for each weight
         return delta*self.weights
                
@@ -89,13 +86,14 @@ class FullyConnectedLayer:
         self.weights = weights
         # Initialize the neurons in the layer
         self.neurons = []
+        # Creating the specified number of neurons in the layer
         for i in range(neuron_num):
             weight = weights[i]
             inputdim = weight.shape[0]
             if inputdim != input_num:# Check if the input dimension matches the dimension of the weights
                 raise ValueError(f'Input dim does not match the dim of weights, input dim: {inputdim}, weights dim: {input_num}')
             self.neurons.append(Neuron(input_dim=inputdim, activation=activation, learning_rate=learning_rate, weights=weight))
-        # Initialize the output and inputs to None
+        # Initialize the output to None
         self.outputs = []
         if verbose: # Print the parameters if verbose is True
             print('Initialized Layer with the following architecture:')
@@ -112,7 +110,7 @@ class FullyConnectedLayer:
         return np.array(output)
     #This method calculates the partial derivative for each weight and returns the delta*w to be used in the previous layer
     def calcwdeltas(self, dloss):
-        #given the next layer's w*delta, should run through the neurons calling calcpartialderivative() for each (with the correct value), sum up its own w*delta, and then update the weights (using the updateweight() method). I should return the sum of w*delta.          
+        #given the next layer's w*delta, run through the neurons calling calcpartialderivative() for each (with the correct value), sum up its own w*delta, and then update the weights (using the updateweight() method). I return the sum of w*delta.          
         deltaw = np.zeros(self.input_num)
         for i in range(self.neuron_num):
             deltaw += self.neurons[i].calcpartialderivative(dloss[i]) #Calculate the partial derivative sum for each weight
@@ -124,22 +122,26 @@ class ConvolutionalLayer:
     Convoluational Layer Class to manage the neurons in the layer
     '''
     def __init__(self, num_kernels, kernel_size, activation, input_dim, learning_rate, weights=None):
-        print('Convolutional Layer')
-        self.number_of_neurons = (input_dim[0]-kernel_size+1)*(input_dim[1]-kernel_size+1)*num_kernels
-        self.num_kernels = num_kernels
+        # Initializing the parameters in the ConvolutionalLayer Class
+        self.number_of_neurons = (input_dim[0]-kernel_size+1)*(input_dim[1]-kernel_size+1)*num_kernels # Each neuron is used for calculating the kernel onto a specific portion of the input
+        self.num_kernels = num_kernels # Also known as the number of filters
         self.activation = activation
         self.input_dim = input_dim
         self.kernel_size = kernel_size
         self.learning_rate = learning_rate
         self.weights = weights
         self.output_shape= (self.input_dim[0]-self.kernel_size+1, self.input_dim[1]-self.kernel_size+1, self.num_kernels)
+        # the "pool" variables correspond to the output dimensions
         self.xPool = self.output_shape[0]
         self.yPool = self.output_shape[1]
+        # Initializing random weights if not provided
         if weights is None:
             self.weights = np.random.rand(num_kernels, input_dim[2]*kernel_size*kernel_size+1)
         self.outputs = []
         
         self.neurons = []
+        # Creating the neurons in the layer
+        # Have to loop over the 2 dimensions of the convolution
         for i in range(num_kernels):
             weight = None
             if weights is None:
@@ -153,43 +155,29 @@ class ConvolutionalLayer:
                 self.neurons.append(Neuron(input_dim=inputdim, activation=activation, learning_rate=learning_rate, weights=weight))
         
     def calculate(self, input):
+        # Calculating the output of the Convolutional layer with its own weights acting on the input passed to it
         self.outputs = np.zeros((self.xPool, self.yPool, self.num_kernels))
         if input.shape != tuple(self.input_dim):
             raise ValueError(f'Input shape does not match the input dim, input shape: {input.shape}, input dim: {self.input_dim}')
-        #print(self.num_kernels)
         for i in range(self.num_kernels):
             for j in range(self.xPool):
                 for k in range(self.yPool):
-                    
                     input_patch = input[j:j+self.kernel_size, k:k+self.kernel_size, :]
                     input_patch = input_patch.reshape(-1)
                     input_patch = np.append(input_patch, 1)
                     self.outputs[j, k, i] = self.neurons[i*(self.xPool)*(self.yPool)+j*(self.yPool)+k].calculate(input_patch)
         return self.outputs
     
+    #This method calculates the partial derivative for each weight and returns the delta*w to be used in the previous layer
     def calcwdeltas(self, dloss):
-        print('Calculate w deltas')
         dLossdOut = np.zeros(self.input_dim)
-        print(dLossdOut.shape)
-        print(dloss.shape)
-        print(self.num_kernels)
-        #print(dLossdOut.shape)
         dloss = np.array(dloss)
-        #print(dloss[0,0])
-        # print(self.neurons[0].calcpartialderivative(dloss[0,0]))
-        # for i in range(self.num_kernels):
         for i in range(self.num_kernels):
             for j in range(self.xPool):
                 for k in range(self.yPool):
                     print()
-                    dLossdOut[j, k, :] += np.sum(self.neurons[i*(self.xPool)*(self.yPool)+j*(self.yPool)+k].calcpartialderivative(dloss[j,k,i]))
+                    dLossdOut[j, k, :] += np.sum(self.neurons[i*(self.xPool)*(self.yPool)+j*(self.yPool)+k].calcpartialderivative(dloss[j,k,i])) # Calculating the partial derivative sum for each weight
                     self.neurons[i*(self.xPool)*(self.yPool)+j*(self.yPool)+k].updateweight()
-                    
-        # print('dloss',dLossdOut.shape,'/n',dLossdOut)
-        # dLossdOutSingle= np.zeros((dLossdOut.shape[0], dLossdOut.shape[1]))
-        # for i in range(self.num_kernels):
-        #     dLossdOutSingle += dLossdOut[:, :, i]
-        #print(dLossdOutSingle.shape)
         return dLossdOut
                
 class MaxPoolingLayer:
@@ -197,22 +185,25 @@ class MaxPoolingLayer:
     Max Pooling Layer
     '''
     def __init__(self, kernel_size, input_shape,padding='valid'):
-        print('Max Pooling Layer')
+        # Initializing the MaxPoolingLayer Class
         self.number_of_neurons = ((input_shape[0]-kernel_size+1)*(input_shape[1]-kernel_size+1))/kernel_size
         self.input_shape = input_shape
         self.kernel_size = kernel_size
         self.outputs = []
         self.stride = kernel_size
+        # These are the number of "pools" which will occur, and incidentally is also the output dimensions
         self.xPool = ((self.input_shape[0]-self.kernel_size)//self.stride+1)
         self.yPool = ((self.input_shape[1]-self.kernel_size)//self.stride+1)
         self.output_shape = (self.xPool, self.yPool,input_shape[2])
+        # This array is used as the mask telling which location in the input corresponded to the maximum value in the pool.  Needed to find where to pass back the dloss
         self.maxArgs = np.zeros(input_shape)
         
     def calculate(self, input):
-        # print('Calculate Max Pooling')
         # need to reinitialize the outputs before computing
         self.maxArgs = np.zeros(self.input_shape)
         self.outputs = []
+        # Finding the maximum in a subset (pool) of the input, looping over all of the subsets which constitute the input
+        # Also creating the mask used in back propagation
         for k in range(self.input_shape[2]):
             h = []
             for j in range(self.xPool):
@@ -223,14 +214,12 @@ class MaxPoolingLayer:
                     MaxArgX_Rel = MaxlArg//self.kernel_size
                     MaxlArgY_Rel = MaxlArg%self.kernel_size
                     self.maxArgs[j*self.stride+MaxArgX_Rel,i*self.stride+MaxlArgY_Rel,k] = 1
-                    
-                    #self.maxArgs[j] = 1
                     l.append(Maxl)
                 h.append(l)
             self.outputs.append(h)
         return np.array(self.outputs)
 
-    
+    # Returns the delta*w corresponding to the maximum values in the pools, where the location of the values are saved in the mask maxArgs
     def calcwdeltas(self, dloss):
         dloss = np.array(dloss)
         deltaw = np.zeros((self.input_shape[0], self.input_shape[1],self.input_shape[2]))
@@ -238,8 +227,6 @@ class MaxPoolingLayer:
             for j in range(self.xPool):
                 for i in range(self.yPool):
                     self.maxArgs[j*self.stride:j*self.stride+self.kernel_size,i*self.stride:i*self.stride+self.kernel_size,k]*=dloss[j,i,k]
-        # for i in range(self.input_shape[2]):
-        #     deltaw += self.maxArgs[:, :, i]
         deltaw += self.maxArgs
         return deltaw            
          
@@ -248,25 +235,22 @@ class FlattenLayer:
     Flattening Layer
     '''
     def __init__(self,input_shape):
-        print('Flatten Layer')
+        # Initializing the variables in the FlattenLayer Class
         self.outputs = None
         self.inputs = None
         self.input_shape = input_shape
         self.output_shape = np.prod(input_shape)
         
+    # This method flattens the input into a single-dimension array
     def calculate(self, input):
-        # print('Calculate Flatten')
         self.inputs = input
-        # print(input.shape)
         self.outputs = input.flatten()
-        # print(self.outputs.shape)
         return self.outputs
     
+    # This method reshapes the dloss from a previous layer into the shape of the input layer for back propagation
     def calcwdeltas(self,dloss):
-        # print(dloss)
         dloss = dloss[:-1]
         deltaw = np.reshape(dloss, self.input_shape)
-        # print(deltaw)
         return deltaw
         
 class NeuralNetwork:
@@ -315,7 +299,6 @@ class NeuralNetwork:
             self.architecture.append(self.layers[-1].output_shape)
             print('Adding Convolutional Layer')
         elif layer_type == 'maxpooling':
-            print(self.architecture)
             self.layers.append(MaxPoolingLayer(kernel_size,self.architecture[-1]))
             self.architecture.append(self.layers[-1].output_shape)
             print('Adding Max Pooling Layer')
@@ -330,14 +313,9 @@ class NeuralNetwork:
      # Calculate the output of the neural network 
     def calculate(self,X):
         input = np.array(X)
-        #print(input.shape)
-        #print(input[0])
         if self.input_size.shape != input.shape: # Check if the input size is an integer
            input = input.reshape(self.input_size)
-        #print(input[0])
-        # return
         for layer in self.layers:
-            # input = np.append(input, 1) # Append a 1 to the input to account for the bias
             output = layer.calculate(input)# Calculate the output of the layer
             input = output
         return output   # Return the output of the neural network
@@ -430,15 +408,14 @@ if __name__=="__main__": # Run the main function
         l1k1,l1b1,l3,l3b,input, output = generateExample1()
         w1k1 = np.append(l1k1.flatten(),l1b1)
         w1 = np.array([w1k1])
-        #print('w1\n',w1)
         w3 = np.append(l3.flatten(),l3b)
         w3 = np.array([w3])
-        #print('w3\n',w3)
         
         #save initial values
         testCNNw1k1 = w1k1
         testCNNw3 = w3
         
+        # Creating the custom Neural Network
         testCNN = NeuralNetwork(input_size=[5,5], loss='mse', learning_rate=learningRate, verbose=True)
         testCNN.addLayer('convolutional',1,'logistic',kernel_size=3,weights=w1)
         testCNN.addLayer('flatten',0,'logistic')
@@ -465,7 +442,6 @@ if __name__=="__main__": # Run the main function
         
         #Setting input. Tensor flow is expecting a 4d array since the first dimension is the batch size (here we set it to one), and third dimension is channels
         img=np.expand_dims(input,axis=(0,3))
-        print(img.shape)
     
         sgd = optimizers.SGD(learning_rate=learningRate)
         model.compile(loss='MSE', optimizer=sgd, metrics=['accuracy'])
@@ -491,6 +467,7 @@ if __name__=="__main__": # Run the main function
         print(f'Output Comparison')
         print(f'Custom CNN: {np.squeeze(output_custom):.5f}')
         print(f'Keras CNN: {np.squeeze(output_tf):.5f}')
+
     if sys.argv[2] == 'example2':
         from parameters import generateExample2
         
@@ -500,13 +477,10 @@ if __name__=="__main__": # Run the main function
         w1k1 = np.append(l1k1.flatten(),l1b1)
         w1k2 = np.append(l1k2.flatten(),l1b2)
         w1 = np.array([w1k1,w1k2])
-        #print('w1\n',w1)
         w2 = np.append(l2k1.flatten(),l2b)
         w2 = np.array([w2])
-        # print('w2\n',w2)
         w3 = np.append(l3.flatten(),l3b)
         w3 = np.array([w3])
-        #print('w3\n',w3)
         
         #save initial values
         testCNNw1k1 = w1k1
@@ -514,6 +488,7 @@ if __name__=="__main__": # Run the main function
         testCNNw2 = w2
         testCNNw3 = w3
         
+        # Creating the custom Neural Network
         testCNN = NeuralNetwork(input_size=[7,7], loss='mse', learning_rate=learningRate, verbose=True)
         testCNN.addLayer('convolutional',2,'logistic',kernel_size=3,weights=w1)
         testCNN.addLayer('convolutional',1,'logistic',kernel_size=3,weights=w2)
@@ -550,7 +525,6 @@ if __name__=="__main__": # Run the main function
         
         #Setting input. Tensor flow is expecting a 4d array since the first dimension is the batch size (here we set it to one), and third dimension is channels
         img=np.expand_dims(input,axis=(0,3))
-        print(img.shape)
     
         sgd = optimizers.SGD(learning_rate=learningRate)
         model.compile(loss='MSE', optimizer=sgd, metrics=['accuracy'])
@@ -598,16 +572,15 @@ if __name__=="__main__": # Run the main function
         w1k1 = np.append(l1k1.flatten(),l1b1)
         w1k2 = np.append(l1k2.flatten(),l1b2)
         w1 = np.array([w1k1,w1k2])
-        #print('w1\n',w1)
         w3 = np.append(l3.flatten(),l3b)
         w3 = np.array([w3])
-        #print('w3\n',w3)
         
         #save initial values
         testCNNw1k1 = w1k1
         testCNNw1k2 = w1k2
         testCNNw3 = w3
         
+        # Creating the custom Neural Network
         testCNN = NeuralNetwork(input_size=[8,8], loss='mse', learning_rate=learningRate, verbose=True)
         testCNN.addLayer('convolutional',2,'logistic',kernel_size=3,weights=w1)
         testCNN.addLayer('maxpooling',1,'logistic',kernel_size=2)
@@ -639,15 +612,13 @@ if __name__=="__main__": # Run the main function
         
         #Setting input. Tensor flow is expecting a 4d array since the first dimension is the batch size (here we set it to one), and third dimension is channels
         img=np.expand_dims(input,axis=(0,3))
-        print(img.shape)
     
         sgd = optimizers.SGD(learning_rate=learningRate)
         model.compile(loss='MSE', optimizer=sgd, metrics=['accuracy'])
         history=model.train_on_batch(img,output)
         output_tf = model.predict(img)
         
-        testCNN.train([input],[output],epochs=1)      
-        print('starting second calc')
+        testCNN.train([input],[output],epochs=1)
         output_custom = testCNN.calculate(input)  
         #print needed values.
         np.set_printoptions(precision=5)
