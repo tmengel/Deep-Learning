@@ -15704,7 +15704,7 @@ class="
 <hr>
 <hr>
 <p><strong>Task 2: Small Convolutional Neural Network</strong></p>
-<p>This network is a 2D convolution squential model which is defined in <code>SmallCNN</code> function above. It consists of 2 hidden layers. The first is a <code>Conv2D</code> layer which has 40 features, a $5x5$ kernal size, stride 1 and padding valid. The activation for this convolution layer is relu. The convolution later is followed by a max pooling layer with $2x2$ pool size. The final hidden layer is a dense layer with 100 neurons and a relu activation function. The output of the model is a dense layer with $n$ nodes depending on the number of output categories with a soft-max activation. The model is optimized with the adam optimizer and the loss function is categorical cross entropy. The model is trained for 50 epochs with a mini-batch size of 32. For each of the target features, the model summary, epoch training history, accuracy and loss vs epoch plots, confusion matrix, and final categorical accuracy are shown below. The model is trained on the training set with an 80/20 validation split. The model is then evaluated on the validation csv file set. The results are shown below.</p>
+<p>This network is a 2D convolution squential model which is defined in <code>SmallCNN</code> function above. It consists of 2 hidden layers. The first is a <code>Conv2D</code> layer which has 40 features, a $5x5$ kernal size, stride 1 and padding valid. The activation for this convolution layer is relu. The convolution later is followed by a max pooling layer with $2x2$ pool size. The final hidden layer is a dense layer with 100 neurons and a relu activation function. The output of the model is a dense layer with $n$ nodes depending on the number of output categories with a soft-max activation. The model is optimized with the adam optimizer and the loss function is categorical cross entropy. The model is trained for 10 epochs with a mini-batch size of 64. For each of the target features, the model summary, epoch training history, accuracy and loss vs epoch plots, confusion matrix, and final categorical accuracy are shown below. The model is trained on the training set with an 80/20 validation split. The model is then evaluated on the validation csv file set. The results are shown below.</p>
 <p>For more detailed explaination of the model, the keras sequential model is shown below.</p>
 
 <pre><code>    Conv2D(40,input_shape=(32,32,1),kernel_size=(5,5),strides=1,padding='valid', activation='relu'),
@@ -16028,7 +16028,7 @@ class="
 <hr>
 <hr>
 <p><strong>Task 3: Your own Convolutional Neural Network</strong></p>
-<p>This network is a 2D convolution squential model which is defined in <code>CustomCNN</code> function above. This model is much larger than the small convolutional network in the previous task. The first hidden layer is a <code>Conv2D</code> layer which has 64 features, a $3x3$ kernal size, stride 1 and padding same. The activation for this convolution layer is relu. The convolution layer is followed by a max pooling layer with $2x2$ pool size. After the first pooling is another2 <code>Conv2D</code> layer with 128 and 256 features, another $2x2$ max pooling after each <code>2Dconv</code> layer. The final hidden layer is a dense layer with 512 neurons and a relu activation function. There is a 50% drop out layer after the fully connected layer to avoid over fitting. The output of the model is a dense layer with $n$ nodes depending on the number of output categories with a soft-max activation. The model is optimized with the adam optimizer and the loss function is categorical cross entropy. The model is trained for 50 epochs with a mini-batch size of 32. For each of the target features, the model summary, epoch training history, accuracy and loss vs epoch plots, confusion matrix, and final categorical accuracy are shown below. The model is trained on the training set with an 80/20 validation split. The model is then evaluated on the validation csv file set. The results are shown below.</p>
+<p>This network is a 2D convolution squential model which is defined in <code>CustomCNN</code> function above. This model is much larger than the small convolutional network in the previous task. The first hidden layer is a <code>Conv2D</code> layer which has 64 features, a $3x3$ kernal size, stride 1 and padding same. The activation for this convolution layer is relu. The convolution layer is followed by a max pooling layer with $2x2$ pool size. After the first pooling is another2 <code>Conv2D</code> layer with 128 and 256 features, another $2x2$ max pooling after each <code>2Dconv</code> layer. The final hidden layer is a dense layer with 512 neurons and a relu activation function. There is a 50% drop out layer after the fully connected layer to avoid over fitting. The output of the model is a dense layer with $n$ nodes depending on the number of output categories with a soft-max activation. The model is optimized with the adam optimizer and the loss function is categorical cross entropy. The model is trained for 10 epochs with a mini-batch size of 64. For each of the target features, the model summary, epoch training history, accuracy and loss vs epoch plots, confusion matrix, and final categorical accuracy are shown below. The model is trained on the training set with an 80/20 validation split. The model is then evaluated on the validation csv file set. The results are shown below.</p>
 <p>For more detailed explaination of the model, the keras sequential model is shown below.</p>
 
 <pre><code>    Conv2D(64, (3, 3), activation="relu", padding="same", input_shape=(32, 32, 1)),
@@ -16384,7 +16384,7 @@ class="
 <hr>
 <hr>
 <p><strong>Task 4: Your own Convolutional Neural Network on both Tasks Simultaneously</strong></p>
-<p>This network is a 2D convolution model which is defined in <code>MultiTaskCNN</code> function above. The output of the model is a dense layer with $n$ nodes depending on the number of output categories with a soft-max activation. The model is optimized with the adam optimizer and the loss function is categorical cross entropy. The model is trained for 100 epochs with a mini-batch size of 32. For each of the target features, the model summary, epoch training history, accuracy and loss vs epoch plots, confusion matrix, and final categorical accuracy are shown below. The model is trained on the training set with an 80/20 validation split. The model is then evaluated on the validation csv file set. The results are shown below.</p>
+<p>This network is a 2D convolution model which is defined in <code>MultiTaskCNN</code> function above. The output of the model is a dense layer with $n$ nodes depending on the number of output categories with a soft-max activation. The model is optimized with the adam optimizer and the loss function is categorical cross entropy. The model is trained for 10 epochs with a mini-batch size of 128. For each of the target features, the model summary, epoch training history, accuracy and loss vs epoch plots, confusion matrix, and final categorical accuracy are shown below. The model is trained on the training set with an 80/20 validation split. The model is then evaluated on the validation csv file set. The results are shown below.</p>
 <p>For more detailed explaination of the model, the keras sequential model is shown below.</p>
 
 <pre><code>    feature1_conv1 = Conv2D(32, kernel_size=(3, 3), activation='relu', padding='same',)(Input(input_shape=(32, 32, 1)))
@@ -16578,34 +16578,39 @@ class="
 <hr>
 <hr>
 <p><strong>Task 5: Variational Auto Encoder</strong></p>
-<p>This network is a variational auto encoder which is defined in <code>VariationalAutoEncoder</code> function above.The encoder takes in $32x32x1$ gray-scaled images and produces a mean and log variance vector of size <code>latentdim</code>, which is entered by the user. The decoder takes in the mean and log variance vector and produces a $32x32x1$ gray-scaled image. The model is optimized with the adam optimizer and the loss function is mean squared error. The model is trained for 100 epochs with a mini-batch size of 32. The model summary, epoch training history, accuracy and loss vs epoch plots, and 20 sample generated images are shown below. The 20 images are generated by random vectors of latent size <code>latentdim</code>, passed only to the decoder in <code>do_VAE_task</code>. The model is shown below.</p>
+<p>This network is a variational auto encoder which is defined in <code>VariationalAutoEncoder</code> function above.The encoder takes in $32x32x1$ gray-scaled images and produces a mean and log variance vector of size <code>latentdim</code>, which is entered by the user. The decoder takes in the mean and log variance vector and produces a $32x32x1$ gray-scaled image. The model is optimized with the adam optimizer and the loss function is mean squared error. The model is trained for 50 epochs with a mini-batch size of 64. The model summary, epoch training history, accuracy and loss vs epoch plots, and 20 sample generated images are shown below. The 20 images are generated by random vectors of latent size <code>latentdim</code>, passed only to the decoder in <code>do_VAE_task</code>. The model is shown below.</p>
 
-<pre><code>    # Encoding
-    inputs = Input(shape=(32,32,1),name='encoder_input')
-    x0 = Conv2D(64, (3, 3), activation="relu", padding="same",name='encoder_conv1')(inputs)
-    m0 = MaxPooling2D((2, 2))(x0)
-    x1 = Conv2D(128, (3, 3), activation="relu", padding="same",name='encoder_conv2')(m0)
-    m1 = MaxPooling2D((2, 2))(x1)
-    f1 = Flatten()(m1)
-    x = Dense(intermediate_dim, activation='relu', name="encoder_hidden_dense")(f1)
+<pre><code># Encoding
+inputs = Input(shape=(32,32,1),name='encoder_input')
+x0 = Conv2D(64, (3, 3), activation="relu", padding="same",name='encoder_conv1')(inputs)
+m0 = MaxPooling2D((2, 2))(x0)
+x1 = Conv2D(128, (3, 3), activation="tanh", padding="same",name='encoder_conv2')(m0)
+m1 = MaxPooling2D((2, 2))(x1)
+x2 = Conv2D(256, (3, 3), activation="relu", padding="valid",name='encoder_conv3')(m1)
+m2 = MaxPooling2D((2, 2))(x2)
+f1 = Flatten()(m2)
+x_flat1 = Dense(intermediate_dim, activation='sigmoid', name="encoder_hidden_dense")(f1)
+x_flat2 = Dense(10*intermediate_dim, activation='tanh', name="encoder_hidden_dense2")(x_flat1)
+x = Dense(64, activation='relu', name="encoder_hidden_dense3")(x_flat2)
 
-    # Latent space
-    z_mean = Dense(latent_dim, name='z_mean')(x)
-    z_log_var = Dense(latent_dim, name='z_log_var')(x)
-    z = Lambda(sampling, name='z')([z_mean, z_log_var])
-    encoder = Model(inputs, [z_mean, z_log_var, z], name='encoder_output')
+# Latent space
+z_mean = Dense(latent_dim, name='z_mean')(x)
+z_log_var = Dense(latent_dim, name='z_log_var')(x)
+z = Lambda(sampling, name='z')([z_mean, z_log_var])
+encoder = Model(inputs, [z_mean, z_log_var, z], name='encoder_output')
 
-    # Decoding
-    latent_inputs = Input(shape=(latent_dim,), name='z_sampling')
-    x2 = Dense(intermediate_dim, activation='relu', name="decoder_hidden_dense")(latent_inputs)
-    x3 = Dense(32*32, activation='relu', name="decoder_hidden_dense2")(x2)
-    r2 = Reshape((32,32,1))(x3)
-    x4 = Conv2DTranspose(128, (3, 3), padding="same", name='decoder_conv1')(r2)
-    x5 = Conv2DTranspose(64, (3, 3), padding="same", name='decoder_conv2')(x4)
-    outputs = Conv2DTranspose(1, (3, 3), padding="same", name='decoder_conv3')(x5)
-    decoder = Model(latent_inputs,outputs,name='decoder_output')
+# Decoding
+latent_inputs = Input(shape=(latent_dim,), name='z_sampling')
+decode_x1 = Dense(intermediate_dim, activation='relu', name="decoder_hidden_dense0")(latent_inputs)
+decode_x2 = Dense(10*intermediate_dim, activation='relu', name="decoder_hidden_dense1")(decode_x1)
+decode_x3 = Dense(32*32, activation='relu', name="decoder_hidden_dense2")(decode_x2)    
+r2 = Reshape((32,32,1))(decode_x3)
+x4 = Conv2DTranspose(128, (3, 3), padding="same", name='decoder_conv1')(r2)
+x5 = Conv2DTranspose(64, (3, 3), padding="same", name='decoder_conv2')(x4)
+outputs = Conv2DTranspose(1, (3, 3), padding="same", name='decoder_conv3')(x5)
+decoder = Model(latent_inputs,outputs,name='decoder_output')
 
-    outputs = decoder(encoder(inputs)[2])</code></pre>
+outputs = decoder(encoder(inputs)[2])</code></pre>
 
 </div>
 </div>
@@ -16815,6 +16820,18 @@ class="
 <p>Task 3 used our own Convolutional Neural Network to try and predict on the same datasets, yielding an accuracy of 43.3% for the age and 81.8% for the gender.  This model still has some discrepancy between the training and validation loss, but overall it is able to have slightly better accuracy than the small convolutional layer.</p>
 <p>Task 4 used a Convolutional Neural Network trained to predict both the age and gender simulateously.  The accuracy for this model is similar to our own convolutional models, but this is more impressive since it is one model pridicting two things.</p>
 <p>Lastly, in Task 5 we used a Variational Autoencoder trained to create human faces.  Using a base latent dimension of 5, the decoder portion of the model is able take a vector of random numbers and create a face.  Looking at the results, it is clear that the faces are blurry, but they do look like faces.  For better faces it might be better to increase the latent dimension, allowing there to be more features passed from the encoder to the decoder, or by increasing the size and complexity of the network.</p>
+
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+<h2 id="How-to-Run">How to Run<a class="anchor-link" href="#How-to-Run">&#182;</a></h2><p>There is a section above to run each task.  Just execute the Notebook Cell for the desired task and the model will train and output the results.</p>
 
 </div>
 </div>
