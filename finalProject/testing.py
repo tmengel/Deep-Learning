@@ -165,7 +165,7 @@ def PhaseNet():
     
     return model
 
-def getRandomPileupTraces(tt1,tt2,rndphase):
+def getRandomPileupTraces(tt1,tt2,rndphase,scale):
   newtot = np.zeros_like(tt1)
   newtt1 = np.zeros_like(tt1)
   newtt2 = np.zeros_like(tt2)
@@ -178,6 +178,7 @@ def getRandomPileupTraces(tt1,tt2,rndphase):
     else:
       i2 = int(i-rndphase)
       newtt2[i] = (tt2[i2+1]-tt2[i2])*(rndphase-int(rndphase))+tt2[i2]
+      newtt2[i] *= scale
       newtot[i] = tt1[i] + newtt2[i]
   max = np.max(newtot)
   nmin = np.min(newtot)
@@ -215,7 +216,7 @@ for i in range(traces_no_pileup.shape[0]):
 #    traces_depiled[i][1][:] = np.roll(traces_no_pileup[rand_trace][:300], int(rand_phase_shifts[i]))
 #    traces_depiled[i][1][:] = traces_depiled[i][1][:] * rand_amplitude_shifts[i]
 #    traces_depiled[i][1][:int(rand_phase_shifts[i])] = 0.0
-    traces_piledup[i][:,0],traces_depiled[i][0][:],traces_depiled[i][1][:] = getRandomPileupTraces(traces_no_pileup[i][:300],traces_no_pileup[rand_trace][:300],rand_phase_shifts[i])
+    traces_piledup[i][:,0],traces_depiled[i][0][:],traces_depiled[i][1][:] = getRandomPileupTraces(traces_no_pileup[i][:300],traces_no_pileup[rand_trace][:300],rand_phase_shifts[i],rand_amplitude_shifts[i])
     phase_amplitude[i][0] = rand_phase_shifts[i]
     phase_amplitude[i][1] = rand_amplitude_shifts[i]
 
