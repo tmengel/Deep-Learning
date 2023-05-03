@@ -5,8 +5,10 @@ import tensorflow as tf
 from tensorflow.keras import models, layers
 
 NUMEPOCHS = 1000
-
-
+PHASEMAX = 20
+PHASEMIN = 0.01
+PERCENTPILEUP = 0.5
+numTrainingEvents = 100000
 
 def GetData(filename, treename="timing"):
     '''
@@ -201,8 +203,9 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
 traces_no_pileup = pdf["trace"].values[pdf["pileup"].values == False]
-rand_phase_shifts = np.random.uniform(0, 20, traces_no_pileup.shape[0])
+rand_phase_shifts = np.random.uniform(PHASEMIN,PHASEMAX, traces_no_pileup.shape[0])
 rand_amplitude_shifts = np.random.uniform(0.5, 1.5, traces_no_pileup.shape[0])
+rand_ifPile = np.random.uniform(0, 1, traces_no_pileup.shape[0])
 
 phase_amplitude = np.zeros((traces_no_pileup.shape[0], 2))
 traces_depiled = np.zeros((traces_no_pileup.shape[0], 2, 300))
@@ -211,14 +214,17 @@ traces_piledup = np.zeros((traces_no_pileup.shape[0], 300,1))
 ### Section for creating pileup as input
 print('Loaded input data.. now working to create pileup')
 for i in range(traces_no_pileup.shape[0]):
-    rand_trace = int(np.random.uniform(0,traces_no_pileup.shape[0]))
-#    traces_depiled[i][0][:] = traces_no_pileup[i][:300]
-#    traces_depiled[i][1][:] = np.roll(traces_no_pileup[rand_trace][:300], int(rand_phase_shifts[i]))
-#    traces_depiled[i][1][:] = traces_depiled[i][1][:] * rand_amplitude_shifts[i]
-#    traces_depiled[i][1][:int(rand_phase_shifts[i])] = 0.0
-    traces_piledup[i][:,0],traces_depiled[i][0][:],traces_depiled[i][1][:] = getRandomPileupTraces(traces_no_pileup[i][:300],traces_no_pileup[rand_trace][:300],rand_phase_shifts[i],rand_amplitude_shifts[i])
-    phase_amplitude[i][0] = rand_phase_shifts[i]
-    phase_amplitude[i][1] = rand_amplitude_shifts[i]
+    if rand_ifPile[i]<PERCENTPILEUP:
+        rand_trace = int(np.random.uniform(0,traces_no_pileup.shape[0]))
+        traces_piledup[i][:,0],traces_depiled[i][0][:],traces_depiled[i][1][:] = getRandomPileupTraces(traces_no_pileup[i][:300],traces_no_pileup[rand_trace][:300],rand_phase_shifts[i],rand_amplitude_shifts[i])
+        phase_amplitude[i][0] = rand_phase_shifts[i]
+        phase_amplitude[i][1] = rand_amplitude_shifts[i]
+    else:
+        traces_piledup[i][:,0] = traces_no_pileup[i][:300]
+        traces_depiled[i][0][:] = traces_no_pileup[i][:300]
+        traces_depiled[i][1][:] = np.zeros_like(traces_no_pileup[i][:300])
+        phase_amplitude[i][0] = 0.
+        phase_amplitude[i][1] = 0.
 
 #for i in range(traces_no_pileup.shape[0]):
 #    traces_piledup[i][:,0] = traces_depiled[i][0][:] + traces_depiled[i][1][:]
@@ -230,8 +236,8 @@ for i in range(traces_no_pileup.shape[0]):
 
 model = PulseNet()
 model.compile(optimizer='adam', loss='mse', metrics=['accuracy'])
-train_x = traces_piledup[:10000]
-train_y = [phase_amplitude[:10000],traces_depiled[:10000]]
+train_x = traces_piledup[:100000]
+train_y = [phase_amplitude[:100000],traces_depiled[:100000]]
 model.fit(train_x, train_y, epochs=NUMEPOCHS, batch_size=256, validation_split=0.2, verbose=1)
 
 
