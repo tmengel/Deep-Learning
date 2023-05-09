@@ -11,6 +11,7 @@ try:
     import tensorflow.keras as keras
     from tensorflow.keras import models, layers
 
+
 except ImportError:
     warnings.warn("You do not have pandas, numpy, or uproot installed. "
                   "You will not be able to use the functions in utils.py.")
@@ -263,10 +264,40 @@ def TrainModel(name, x, y, outfile, weightfile=None, epochs=1, batch_size=64, va
     trains model with specified parameters
     '''
     # check if outfile exists    
+    
     model = GetModel(name) # get model
     if weightfile is not None: # load weights if specified
         model.load_weights(weightfile) # load weights
-    model.fit(x, y, epochs=epochs, batch_size=batch_size, validation_split=validation_split) # train model
+    history = model.fit(x, y, epochs=epochs, batch_size=batch_size, validation_split=validation_split) # train model
     model.save_weights(outfile) # save weights
+    history_file = outfile.replace(".h5", "_history.h5") # get history file name
+    history_dict = history.history # get history dictionary
+    pdf = pd.DataFrame(history_dict, index=history.epoch, columns=history_dict.keys()) # convert history to dataframe
+    pdf.to_hdf(history_file, "df") # save history
+    
     return model
 
+
+
+def LoadModel(autoencoder, phase, amplitude, classifer):
+    
+    input = layers.Input(shape=(1, 300))  # Returns a placeholder tensor
+    x = TraceAutoencoder(input) # Trace Autoencoder
+    c_out = PileupClassifier(input) # Pileup Classifier
+    y , n = tf.split(c_out, 2, axis=1) # will be (1,0) if pileup, (0,1) if not pileup
+    x1 , x2  = tf.split(x, 2, axis=1) # split into two tensors
+    x1 = tf.reduce_sum(x1, axis=1) # sum over extra dimension
+    x2 = tf.reduce_sum(x2, axis=1)  # sum over extra dimension
+    x2 = tf.multiply(x2, y) # multiply by pileup classifier either 1 or 0
+    trace_out = tf.concat([tf.expand_dims(x1, axis=1), tf.expand_dims(x2, axis=1)], axis=1) # concat back together
+    phase_out = PhaseRegressor(x) # Phase Regressor
+    amp_out = AmplitudeRegressor(x) # Amplitude Regressor
+
+    model = models.Model(inputs=input, outputs=[trace_out, phase_out, amp_out, c_out])
+    model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.0002), loss=keras.losses.MeanSquaredError(), metrics=[keras.metrics.MeanSquaredError()])
+    model.layers[1].load_weights(autoencoder)
+    model.layers[3].load_weights(classifer)
+    model.layers[11].load_weights(phase)
+    model.layers[12].load_weights(amplitude)
+    
+    return model
