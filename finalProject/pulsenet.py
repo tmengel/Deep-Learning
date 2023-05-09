@@ -53,18 +53,16 @@ def GetPhases(df):
             phase[i] = 0.0 # set phase to 0
     return phase
 
-def OneHotEncodePileup(pileup):
+def EncodePileup(pileup):
     '''
     Returns one hot encoded pileup
     '''
-    pileup_one_hot = np.zeros((pileup.shape[0], 2)) # initialize array
+    pileup_one_hot = np.zeros((pileup.shape[0], 1)) # initialize array
     for i in range(pileup.shape[0]): # loop over pileup
         if pileup[i] == 0: # check if pileup is 0
-            pileup_one_hot[i][0] = 0
-            pileup_one_hot[i][1] = 1
+            pileup_one_hot[i] = 0 # set pileup to 0
         else: # if pileup is not 0
-            pileup_one_hot[i][0] = 1
-            pileup_one_hot[i][1] = 0
+            pileup_one_hot[i] = 1 # set pileup to 1
     return pileup_one_hot # return one hot encoded pileup
 
 def LoadData(filename):
@@ -74,10 +72,10 @@ def LoadData(filename):
     df = GetData(filename) # get data
     traces = GetTraces(df) # get traces
     phases = GetPhases(df) # get phases
-    pileup_one_hot = OneHotEncodePileup(phases) # get one hot encoded pileup
+    pileup_one_hot = EncodePileup(phases) # get one hot encoded pileup
     return traces, phases, pileup_one_hot
     
-def CreateMockData(filename, pileup_split=0.5, phase_min=0, phase_max=100, amplitude_min=0.5, amplitude_max=1.5):
+def CreateData(filename, pileup_split=0.5, phase_min=0, phase_max=100, amplitude_min=0.5, amplitude_max=1.5):
     '''
     Creates mock data for testing from non pileup data
     '''
@@ -163,7 +161,7 @@ def PlotTraces(traces, phases = None, onehot = None, n =10):
         ax[i//5, i%5].text(0.05, 0.9, "Trace #{}".format(rand_idx), fontsize=10, color='black', transform=ax[i//5, i%5].transAxes,fontweight='bold') # add trace number
         
         if onehot is not None: # check if one hot encoded pileup is given
-            if onehot[rand_idx][0] == 1: # check if pileup
+            if onehot[rand_idx] == 1: # check if pileup
                 if phases is not None: # check if phases are given
                     ax[i//5, i%5].text(0.55, 0.9, "Shift: {0:.2f} ns".format(phases[rand_idx][0]), fontsize=10, color='blue', transform=ax[i//5, i%5].transAxes) # add phase
                 else: # if phases are not given
@@ -233,7 +231,7 @@ PileupClassifier = keras.Sequential(
       layers.Flatten(name="pileup-classifier-flatten"),
       layers.Dense(256, activation='relu', name="pileup-classifier-dense1"),
       layers.Dense(64, activation='relu', name="pileup-classifier-dense2"),
-      layers.Dense(2, activation='softmax', name="pileup-classifier-output")
+      layers.Dense(1, activation='sigmoid', name="pileup-classifier-output")
     ],
     name="pileup_classifier"
 ) 
