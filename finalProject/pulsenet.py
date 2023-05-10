@@ -293,7 +293,6 @@ class TracePhaseRegressor(keras.Model):
         self.Dense1 = layers.Dense(256, activation='tanh', name="phase-regressor-dense1")
         self.Dense2 = layers.Dense(124, activation='tanh', name="phase-regressor-dense2")
         self.DenseOutput = layers.Dense(1, activation='linear', name="phase-regressor-output")
-        super(TracePhaseRegressor,self).__init__(**kwargs)
         
     def call(self, inputs):
         x = self.Conv1D1(inputs)
@@ -313,7 +312,6 @@ class TraceAmplitudeRegressor(keras.Model):
         self.Dense1 = layers.Dense(256, activation='tanh', name="amplitude-regressor-dense1")
         self.Dense2 = layers.Dense(124, activation='tanh', name="amplitude-regressor-dense2")
         self.DenseOutput = layers.Dense(1, activation='linear', name="amplitude-regressor-output")
-        super(TraceAmplitudeRegressor,self).__init__(**kwargs)
         
     def call(self, inputs):
         x = self.Conv1D1(inputs)
