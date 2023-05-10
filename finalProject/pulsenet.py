@@ -178,8 +178,9 @@ def PlotTraces(traces, phases = None, onehot = None, n =10):
 class TraceDiscriminator(keras.Model):
     
     def __init__(self, name="trace_discriminator", **kwargs):
-        super(TraceDiscriminator, self).__init__(name=name)
-        self.ReshapeInput = layers.Reshape((300, 1),input_shape=(1, 300), name="discriminator-reshape1")
+        super(TraceDiscriminator, self).__init__(name=name, **kwargs)
+        self.Flatten1 = layers.Flatten(input_shape=(1, 300), name="discriminator-flatten1")
+        self.ReshapeInput = layers.Reshape((300, 1), name="discriminator-reshape1")
         self.Conv1D1 = layers.Conv1D(kernel_size=300, filters=300, strides=1, activation='tanh', name="discriminator-conv1")
         self.MaxPooling1D1 = layers.MaxPooling1D(pool_size=1, strides=2, name="discriminator-maxpool1")
         self.Conv1D2 = layers.Conv1D(kernel_size=1, filters=300, strides=1, activation='relu', name="discriminator-conv2")
@@ -192,11 +193,11 @@ class TraceDiscriminator(keras.Model):
         self.ReshapeOutput = layers.Reshape((2, 300), name="discriminator-reshape3")
         self.LSTM = layers.LSTM(64, return_sequences=True, name="discriminator-lstm0")
         self.Dense3 = layers.Dense(150, activation='tanh', name="discriminator-dense3")
-        self.DenseOutput = layers.Dense(300, activation='sigmoid', name="discriminator-output")
-        super(TraceDiscriminator,self).__init__(**kwargs)
+        self.DenseOutput = layers.Dense(300, activation='linear', name="discriminator-output")
     
     def call(self, inputs):
-        x = self.ReshapeInput(inputs)
+        x = self.Flatten1(inputs)
+        x = self.ReshapeInput(x)
         x = self.Conv1D1(x)
         x = self.MaxPooling1D1(x)
         x = self.Conv1D2(x)
@@ -277,25 +278,37 @@ class TraceClassifierDiscriminatorHead(keras.Model):
     
     def __init__(self, name="trace_classifier_discriminator_head", **kwargs):
         super(TraceClassifierDiscriminatorHead, self).__init__(name=name)
-        self.FlattenTrace = layers.Flatten(name="flatten-trace", input_shape=(1,300))
-        self.DenseTrace1 = layers.Dense(256, activation='tanh', name="dense-trace1")
-        self.DenseTrace2 = layers.Dense(124, activation='tanh', name="dense-trace2")
+        self.FlattenTrace = layers.Flatten(input_shape=(1, 300), name="head-flatten1")
+        self.ReshapeTrace = layers.Reshape((300, 1), name="head-reshape1")
+        self.Conv1D1 = layers.Conv1D(kernel_size=300, filters=300, strides=1, activation='tanh', name="head-conv1")
+        self.MaxPooling1D1 = layers.MaxPooling1D(pool_size=1, strides=2, name="head-maxpool1")
+        self.Conv1D2 = layers.Conv1D(kernel_size=1, filters=300, strides=1, activation='relu', name="head-conv2")
+        self.MaxPooling1D2 = layers.MaxPooling1D(pool_size=1, strides=2, name="head-maxpool2")
+        self.Flatten1 = layers.Flatten(name="head-flatten")
+        self.DenseTrace1 = layers.Dense(300, activation='tanh', name="head-dense1")
+        self.DenseTrace2 = layers.Dense(300, activation='tanh', name="head-dense2")    
         self.DenseClassifier1 = layers.Dense(256, activation='tanh', name="dense-classifier1")
-        self.DenseClassifier2 = layers.Dense(124, activation='tanh', name="dense-classifier2")
-        self.Merge = layers.Concatenate(name="merge", axis=1)
+        self.DenseClassifier2 = layers.Dense(300, activation='tanh', name="dense-classifier2")
+    
         self.Dense1 = layers.Dense(300, activation='tanh', name="dense1")
         self.DenseOutput = layers.Dense(300, activation='linear', name="output")
     
     def call(self, inputs):
         input_trace, input_classifier = inputs
         x1 = self.FlattenTrace(input_trace)
+        x1 = self.ReshapeTrace(x1)
+        x1 = self.Conv1D1(x1)
+        x1 = self.MaxPooling1D1(x1)
+        x1 = self.Conv1D2(x1)
+        x1 = self.MaxPooling1D2(x1)
+        x1 = self.Flatten1(x1)
         x1 = self.DenseTrace1(x1)
         x1 = self.DenseTrace2(x1)
         
         x2 = self.DenseClassifier1(input_classifier)
         x2 = self.DenseClassifier2(x2)
         
-        x = self.Merge([x1,x2])
+        x = tf.concat([x1,x2], axis=1)
         x = self.Dense1(x)
         return self.DenseOutput(x)
    
