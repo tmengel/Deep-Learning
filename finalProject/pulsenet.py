@@ -197,13 +197,13 @@ TraceAutoencoder = keras.Sequential(
 )
 
 ##################################### Phase Regression #######################################
-PhaseRegressor = keras.Sequential(
+PhaseRegressor =  keras.Sequential(
     [
       layers.Conv1D(kernel_size=1, filters=300, strides=1, activation='relu', name="phase-regressor-conv1", input_shape=(2,300)),
-      layers.MaxPooling1D(pool_size=1, strides=2, name="phase-regressor-maxpool1"),
-      layers.LSTM(124, return_sequences=True, name="phase-regressor-lstm"),
-      layers.Dense(64, activation='relu', name="phase-regressor-dense1"),
-      layers.Dense(16, activation='relu', name="phase-regressor-dense2"),
+      layers.MaxPooling1D(pool_size=1, strides=1, name="phase-regressor-maxpool1"),
+      layers.Flatten(name="phase-regressor-flatten"),
+      layers.Dense(256, activation='tanh', name="phase-regressor-dense1"),
+      layers.Dense(124, activation='tanh', name="phase-regressor-dense2"),
       layers.Dense(1, activation='linear', name="phase-regressor-output")
     ],
     name="phase_regressor"
@@ -212,12 +212,12 @@ PhaseRegressor = keras.Sequential(
 ##################################### Amplitude Regression #######################################
 AmplitudeRegressor = keras.Sequential(
     [
-      layers.Conv1D(kernel_size=1, filters=300, strides=1, activation='relu', name="amplitude-regressor-conv1", input_shape=(2,300)),
-      layers.MaxPooling1D(pool_size=1, strides=2, name="amplitude-regressor-maxpool1"),
-      layers.LSTM(124, return_sequences=True, name="amplitude-regressor-lstm"),
-      layers.Dense(64, activation='relu', name="amplitude-regressor-dense1"),
-      layers.Dense(16, activation='relu', name="amplitude-regressor-dense2"),
-      layers.Dense(1, activation='linear', name="amplitude-regressor-output")
+      layers.Conv1D(kernel_size=1, filters=300, strides=1, activation='relu', name="phase-regressor-conv1", input_shape=(2,300)),
+      layers.MaxPooling1D(pool_size=1, strides=1, name="phase-regressor-maxpool1"),
+      layers.Flatten(name="phase-regressor-flatten"),
+      layers.Dense(256, activation='tanh', name="phase-regressor-dense1"),
+      layers.Dense(124, activation='tanh', name="phase-regressor-dense2"),
+      layers.Dense(1, activation='linear', name="phase-regressor-output")
     ],
     name="amplitude_regressor"
 )
@@ -226,11 +226,11 @@ AmplitudeRegressor = keras.Sequential(
 PileupClassifier = keras.Sequential(
     [
       layers.Reshape((300, 1), name="pileup-classifier-reshape1", input_shape=(1, 300)),
-      layers.Conv1D(kernel_size=300, filters=124, strides=1, activation='relu', name="pileup-classifier-conv1"),
-      layers.MaxPooling1D(pool_size=1, strides=2, name="pileup-classifier-maxpool1"),
+      layers.Conv1D(kernel_size=300, filters=300, strides=1, activation='relu', name="pileup-classifier-conv1"),
+      layers.MaxPooling1D(pool_size=1, strides=1, name="pileup-classifier-maxpool1"),
       layers.Flatten(name="pileup-classifier-flatten"),
-      layers.Dense(256, activation='relu', name="pileup-classifier-dense1"),
-      layers.Dense(64, activation='relu', name="pileup-classifier-dense2"),
+      layers.Dense(256, activation='tanh', name="pileup-classifier-dense1"),
+      layers.Dense(124, activation='tanh', name="pileup-classifier-dense2"),
       layers.Dense(1, activation='sigmoid', name="pileup-classifier-output")
     ],
     name="pileup_classifier"
@@ -243,16 +243,16 @@ def GetModel(name):
     '''
     if name == "TraceAutoencoder":
         model = TraceAutoencoder
-        model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.003), loss=keras.losses.MeanSquaredError(), metrics=[keras.metrics.MeanSquaredError()])
+        model.compile(optimizer='adam', loss='mse', metrics=['mse'])
     elif name == "PhaseRegressor":
         model = PhaseRegressor
-        model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.003), loss=keras.losses.MeanSquaredError(), metrics=[keras.metrics.MeanSquaredError()])
+        model.compile(optimizer='adam', loss='mse', metrics=['mse'])
     elif name == "AmplitudeRegressor":
         model = AmplitudeRegressor
-        model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.003), loss=keras.losses.MeanSquaredError(), metrics=[keras.metrics.MeanSquaredError()])
+        model.compile(optimizer='adam', loss='mse', metrics=['mse'])
     elif name == "PileupClassifier":
         model = PileupClassifier
-        model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.003), loss=keras.losses.CategoricalCrossentropy(), metrics=[keras.metrics.CategoricalAccuracy()])
+        model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
     else:
         raise ValueError("Invalid model name")
     return model
@@ -274,8 +274,6 @@ def TrainModel(name, x, y, outfile, weightfile=None, epochs=1, batch_size=64, va
     pdf.to_hdf(history_file, "df") # save history
     
     return model
-
-
 
 def LoadModel(autoencoder, phase, amplitude, classifer):
     
