@@ -152,8 +152,7 @@ def CreateData(filename, pileup_split=0.5, phase_min=0.1, phase_max=100, amplitu
     print("Created {} samples: {} % pileup, {} % no pileup".format(n_samples, n_pileup_count/n_samples*100, n_no_pileup_count/n_samples*100))
         
     return traces_convoluted, traces_truth, phases, amplitudes
-
-        
+       
 ##################################### Plotting Functions #######################################
 
 def PlotTraces(traces, phases = None, onehot = None, n =10):
@@ -286,7 +285,7 @@ class TraceClassifierHead(keras.Model):
 class TracePhaseRegressor(keras.Model):
     
     def __init__(self, name="trace_phase_regressor", **kwargs):
-        super(TracePhaseRegressor, self).__init__(name=name)
+        super(TracePhaseRegressor, self).__init__(name=name, **kwargs)
         self.Conv1D1 = layers.Conv1D(kernel_size=1, filters=300, strides=1, activation='relu', name="phase-regressor-conv1")
         self.MaxPooling1D1 = layers.MaxPooling1D(pool_size=1, strides=1, name="phase-regressor-maxpool1")
         self.Flatten = layers.Flatten(name="phase-regressor-flatten")
@@ -305,7 +304,7 @@ class TracePhaseRegressor(keras.Model):
 class TraceAmplitudeRegressor(keras.Model):
     
     def __init__(self, name="trace_phase_regressor", **kwargs):
-        super(TraceAmplitudeRegressor, self).__init__(name=name)
+        super(TraceAmplitudeRegressor, self).__init__(name=name, **kwargs)
         self.Conv1D1 = layers.Conv1D(kernel_size=1, filters=300, strides=1, activation='relu', name="amplitude-regressor-conv1")
         self.MaxPooling1D1 = layers.MaxPooling1D(pool_size=1, strides=1, name="amplitude-regressor-maxpool1")
         self.Flatten = layers.Flatten(name="amplitude-regressor-flatten")
@@ -324,7 +323,7 @@ class TraceAmplitudeRegressor(keras.Model):
 class TraceClassifierDiscriminatorHead(keras.Model):
     
     def __init__(self, name="trace_classifier_discriminator_head", **kwargs):
-        super(TraceClassifierDiscriminatorHead, self).__init__(name=name)
+        super(TraceClassifierDiscriminatorHead, self).__init__(name=name, **kwargs)
         self.Conv1DTrace = layers.Conv1D(kernel_size=300, filters=300, strides=1, activation='tanh', name="classifier-discriminator-head-conv1-trace")
         self.MaxPooling1DTrace = layers.MaxPooling1D(pool_size=1, strides=2, name="classifier-discriminator-head-maxpool1-trace")
         self.Conv1DTrace = layers.Conv1D(kernel_size=1, filters=300, strides=1, activation='relu', name="classifier-discriminator-head-conv2-trace")
@@ -370,125 +369,105 @@ class TraceClassifierDiscriminatorHead(keras.Model):
         x = self.Dense1Merged(x)
         return self.DenseOutput(x)
     
-##################################### Autoregression #######################################
-TraceAutoencoder = keras.Sequential(
-    [
-      layers.Reshape((300, 1), name="encoder-reshape1",input_shape=(1, 300)), # reshape layer
-      layers.Conv1D(kernel_size=300, filters=300, strides=1, activation='tanh', name="encoder-conv1"), # convolutional layer
-      layers.MaxPooling1D(pool_size=1, strides=2, name="encoder-maxpool1"), # max pooling layer
-      layers.Conv1D(kernel_size=1, filters=300, strides=1, activation='relu', name="encoder-conv2"), # convolutional layer
-      layers.MaxPooling1D(pool_size=1, strides=2, name="encoder-maxpool2"), # max pooling layer
-      layers.Flatten(name="encoder-flatten2"), # flatten layer
-      layers.Dense(300, activation='relu', name="encoder-dense1"), # dense layer
-      layers.Reshape((300, 1), name="encoder-reshape2"), # reshape layer
-      layers.Dense(64, activation='tanh', name="encoder-dense2"), # dense layer
-      layers.Conv1DTranspose(kernel_size=1, filters=2, activation='tanh', name="decoder-conv1"),
-      layers.Reshape((2, 300), name="decoder-reshape1"),
-      layers.LSTM(64, return_sequences=True, name="decoder-lstm0"),
-      layers.Dense(150, activation='tanh', name="decoder-dense1"),
-      layers.Dense(300, activation='linear', name="decoder-dense2")    
-    ],
-    name="autoencoder"
-)
+class TraceNet(keras.Model):
     
-##################################### Phase Regression #######################################
-PhaseRegressor =  keras.Sequential(
-    [
-      layers.Conv1D(kernel_size=1, filters=300, strides=1, activation='relu', name="phase-regressor-conv1", input_shape=(2,300)),
-      layers.MaxPooling1D(pool_size=1, strides=1, name="phase-regressor-maxpool1"),
-      layers.Flatten(name="phase-regressor-flatten"),
-      layers.Dense(256, activation='tanh', name="phase-regressor-dense1"),
-      layers.Dense(124, activation='tanh', name="phase-regressor-dense2"),
-      layers.Dense(1, activation='linear', name="phase-regressor-output")
-    ],
-    name="phase_regressor"
-)
+    def __init__(self, name="trace_net", **kwargs):
+        super(TraceNet, self).__init__(name=name, **kwargs)
+        self.TraceDiscriminatorBase = TraceDiscriminatorBase("discriminator_base")
+        self.TraceClassifierBase = TraceClassifierBase("classifier_base")
+        self.TraceClassifierHead = TraceClassifierHead("classifier_head")
+        self.TraceClassifierDiscriminatorHead = TraceClassifierDiscriminatorHead("classifier_discriminator_head")
+        self.TracePhaseRegressor = TracePhaseRegressor("phase_regressor")
+        self.TraceAmplitudeRegressor = TraceAmplitudeRegressor("amplitude_regressor")
+        
+    def compile(self, optimizer=None, loss=None, metrics=None):
+        super(TraceNet, self).compile()
+        self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
+        
+        self.reg_loss_fn = tf.keras.losses.MeanSquaredError()
+        self.class_loss_fn = tf.keras.losses.BinaryCrossentropy()
+        self.trace_metric = tf.keras.metrics.MeanSquaredError(name="trace_mse")
+        self.phase_metric = tf.keras.metrics.MeanSquaredError(name="phase_mse")
+        self.amplitude_metric = tf.keras.metrics.MeanSquaredError(name="amplitude_mse")
+        self.class_metric = tf.keras.metrics.BinaryCrossentropy(name="class_bce")
 
-##################################### Amplitude Regression #######################################
-AmplitudeRegressor = keras.Sequential(
-    [
-      layers.Conv1D(kernel_size=1, filters=300, strides=1, activation='relu', name="phase-regressor-conv1", input_shape=(2,300)),
-      layers.MaxPooling1D(pool_size=1, strides=1, name="phase-regressor-maxpool1"),
-      layers.Flatten(name="phase-regressor-flatten"),
-      layers.Dense(256, activation='tanh', name="phase-regressor-dense1"),
-      layers.Dense(124, activation='tanh', name="phase-regressor-dense2"),
-      layers.Dense(1, activation='linear', name="phase-regressor-output")
-    ],
-    name="amplitude_regressor"
-)
-
-##################################### Pileup Classifier #######################################
-PileupClassifier = keras.Sequential(
-    [
-      layers.Reshape((300, 1), name="pileup-classifier-reshape1", input_shape=(1, 300)),
-      layers.Conv1D(kernel_size=300, filters=300, strides=1, activation='relu', name="pileup-classifier-conv1"),
-      layers.MaxPooling1D(pool_size=1, strides=1, name="pileup-classifier-maxpool1"),
-      layers.Flatten(name="pileup-classifier-flatten"),
-      layers.Dense(256, activation='tanh', name="pileup-classifier-dense1"),
-      layers.Dense(124, activation='tanh', name="pileup-classifier-dense2"),
-      layers.Dense(1, activation='sigmoid', name="pileup-classifier-output")
-    ],
-    name="pileup_classifier"
-) 
-
-##################################### Model Functions #######################################
-def GetModel(name):
-    '''
-    returns model with specified name, compiled with optimzier and loss function
-    '''
-    if name == "TraceAutoencoder":
-        model = TraceAutoencoder
-        model.compile(optimizer='adam', loss='mse', metrics=['mse'])
-    elif name == "PhaseRegressor":
-        model = PhaseRegressor
-        model.compile(optimizer='adam', loss='mse', metrics=['mse'])
-    elif name == "AmplitudeRegressor":
-        model = AmplitudeRegressor
-        model.compile(optimizer='adam', loss='mse', metrics=['mse'])
-    elif name == "PileupClassifier":
-        model = PileupClassifier
-        model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-    else:
-        raise ValueError("Invalid model name")
-    return model
-
-def TrainModel(name, x, y, outfile, weightfile=None, epochs=1, batch_size=64, validation_split=0.2):
-    '''
-    trains model with specified parameters
-    '''
-    # check if outfile exists    
+        self.loss = [self.reg_loss_fn, self.class_loss_fn]
     
-    model = GetModel(name) # get model
-    if weightfile is not None: # load weights if specified
-        model.load_weights(weightfile) # load weights
-    history = model.fit(x, y, epochs=epochs, batch_size=batch_size, validation_split=validation_split) # train model
-    model.save_weights(outfile) # save weights
-    history_file = outfile.replace(".h5", "_history.h5") # get history file name
-    history_dict = history.history # get history dictionary
-    pdf = pd.DataFrame(history_dict, index=history.epoch, columns=history_dict.keys()) # convert history to dataframe
-    pdf.to_hdf(history_file, "df") # save history
-    
-    return model
+    def call(self, inputs):
+        # feature vectors
+        discriminator_feature_vec = self.TraceDiscriminatorBase(inputs)
+        classifer_feature_vec = self.TraceClassifierBase(inputs)
+        # classifier output
+        classifier_output = self.TraceClassifierHead(classifer_feature_vec)
+        # trace output
+        trace_output = self.TraceClassifierDiscriminatorHead([discriminator_feature_vec, classifer_feature_vec])
+        # phase and amplitude output
+        phase_output = self.TracePhaseRegressor(trace_output)
+        amplitude_output = self.TraceAmplitudeRegressor(trace_output)
+        
+        return trace_output, phase_output, amplitude_output, classifier_output
 
-def LoadModel(autoencoder, phase, amplitude, classifer):
+    def classify(self, inputs):
+        classifer_feature_vec = self.TraceClassifierBase(inputs)
+        classifier_output = self.TraceClassifierHead(classifer_feature_vec)
+        return classifier_output
     
-    input = layers.Input(shape=(1, 300))  # Returns a placeholder tensor
-    x = TraceAutoencoder(input) # Trace Autoencoder
-    c_out = PileupClassifier(input) # Pileup Classifier
-    y , n = tf.split(c_out, 2, axis=1) # will be (1,0) if pileup, (0,1) if not pileup
-    x1 , x2  = tf.split(x, 2, axis=1) # split into two tensors
-    x1 = tf.reduce_sum(x1, axis=1) # sum over extra dimension
-    x2 = tf.reduce_sum(x2, axis=1)  # sum over extra dimension
-    x2 = tf.multiply(x2, y) # multiply by pileup classifier either 1 or 0
-    trace_out = tf.concat([tf.expand_dims(x1, axis=1), tf.expand_dims(x2, axis=1)], axis=1) # concat back together
-    phase_out = PhaseRegressor(x) # Phase Regressor
-    amp_out = AmplitudeRegressor(x) # Amplitude Regressor
-
-    model = models.Model(inputs=input, outputs=[trace_out, phase_out, amp_out, c_out])
-    model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.0002), loss=keras.losses.MeanSquaredError(), metrics=[keras.metrics.MeanSquaredError()])
-    model.layers[1].load_weights(autoencoder)
-    model.layers[3].load_weights(classifer)
-    model.layers[11].load_weights(phase)
-    model.layers[12].load_weights(amplitude)
+    def trace(self, inputs): 
+        discriminator_feature_vec = self.TraceDiscriminatorBase(inputs)
+        classifer_feature_vec = self.TraceClassifierBase(inputs)
+        trace_output = self.TraceClassifierDiscriminatorHead([discriminator_feature_vec, classifer_feature_vec])
+        return trace_output        
     
-    return model
+    def phase(self, inputs):
+        discriminator_feature_vec = self.TraceDiscriminatorBase(inputs)
+        classifer_feature_vec = self.TraceClassifierBase(inputs)
+        trace_output = self.TraceClassifierDiscriminatorHead([discriminator_feature_vec, classifer_feature_vec])
+        phase_output = self.TracePhaseRegressor(trace_output)
+        return phase_output
+    
+    def amplitude(self, inputs):
+        discriminator_feature_vec = self.TraceDiscriminatorBase(inputs)
+        classifer_feature_vec = self.TraceClassifierBase(inputs)
+        trace_output = self.TraceClassifierDiscriminatorHead([discriminator_feature_vec, classifer_feature_vec])
+        amplitude_output = self.TraceAmplitudeRegressor(trace_output)
+        return amplitude_output
+    
+    def predict(self, inputs, mode=None):
+        if mode is None:
+            return self.call(inputs)
+        elif mode == "class":
+            return self.classify(inputs)
+        elif mode == "trace":
+            return self.trace(inputs)
+        elif mode == "phase":
+            return self.phase(inputs)
+        elif mode == "amplitude":
+            return self.amplitude(inputs) 
+        else:
+            print("Invalid mode. Please choose from 'class', 'trace', 'phase', 'amplitude'.")  
+    
+    def evaluate(self, x, y):
+        y_hat_trace, y_hat_phase, y_hat_amplitude, y_hat_class = self.predict(x)
+        trace_loss = self.reg_loss_fn(y[0], y_hat_trace)
+        phase_loss = self.reg_loss_fn(y[1], y_hat_phase)
+        amplitude_loss = self.reg_loss_fn(y[2], y_hat_amplitude)
+        class_loss = self.class_loss_fn(y[3], y_hat_class)
+        self.trace_metric.update_state(y[0], y_hat_trace)
+        self.phase_metric.update_state(y[1], y_hat_phase)
+        self.amplitude_metric.update_state(y[2], y_hat_amplitude)
+        self.class_metric.update_state(y[3], y_hat_class)
+        return trace_loss, phase_loss, amplitude_loss, class_loss, self.trace_metric.result(), self.phase_metric.result(), self.amplitude_metric.result(), self.class_metric.result()
+    
+            
+        
+            
+            
+        
+            
+            
+        
+            
+            
+            
+         
+        
