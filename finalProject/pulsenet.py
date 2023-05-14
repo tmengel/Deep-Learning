@@ -205,9 +205,9 @@ def PlotTraces(traces, phases = None, onehot = None, n =10):
 
 ##################################### Models #######################################
 
-class TraceDiscriminatorBase(keras.Model):
+class TraceDiscriminatorBaseNEW(keras.Model):
     
-    def __init__(self, name="trace_discriminator_base", **kwargs):
+    def __init__(self, name="trace_discriminator_baseNEW", **kwargs):
         super(TraceDiscriminatorBase, self).__init__(name=name, **kwargs)
         self.Flatten1 = layers.Flatten(input_shape=(1, 300), name="discriminator-base-flatten1")
         self.ReshapeInput = layers.Reshape((300, 1), name="discriminator-base-reshape1")
@@ -242,9 +242,9 @@ class TraceDiscriminatorBase(keras.Model):
         x = self.LSTM(x)  
         return self.DenseOut(x)
 
-class TraceDiscriminatorHead(keras.Model):
+class TraceDiscriminatorHeadNEW(keras.Model):
     
-    def __init__(self, name="trace_discriminator_head", **kwargs):
+    def __init__(self, name="trace_discriminator_headNEW", **kwargs):
         super(TraceDiscriminatorHead, self).__init__(name=name, **kwargs)
         self.Dense = layers.Dense(150, activation='tanh', name="discriminator-head-dense1", input_shape=(2, 300))
         self.DenseOutput = layers.Dense(300, activation='linear', name="discriminator-head-output")
@@ -253,9 +253,9 @@ class TraceDiscriminatorHead(keras.Model):
         x = self.Dense(inputs)
         return self.DenseOutput(x) 
 
-class TraceClassifierBase(keras.Model):
+class TraceClassifierBaseNEW(keras.Model):
     
-    def __init__(self, name="trace_classifier_base", **kwargs):
+    def __init__(self, name="trace_classifier_baseNEW", **kwargs):
         super(TraceClassifierBase, self).__init__(name=name, **kwargs)  
         self.ReshapeInput = layers.Reshape((300, 1), name="classifier-base-reshape1")
         self.Conv1D1 = layers.Conv1D(kernel_size=300, filters=300, strides=1, activation='relu', name="classifier-base-conv1")
@@ -274,9 +274,9 @@ class TraceClassifierBase(keras.Model):
         x = self.Dense2(x)
         return self.ReshapeOutput(x)
     
-class TraceClassifierHead(keras.Model):
+class TraceClassifierHeadNEW(keras.Model):
         
-        def __init__(self, name="trace_classifier_head", **kwargs):
+        def __init__(self, name="trace_classifier_headNEW", **kwargs):
             super(TraceClassifierHead, self).__init__(name=name, **kwargs) 
             self.FlattenInput = layers.Flatten(name="classifier-head-flatten1", input_shape=(1, 300)) 
             self.DenseOutput = layers.Dense(1, activation='sigmoid', name="classifier-head-output")
@@ -285,17 +285,15 @@ class TraceClassifierHead(keras.Model):
             x = self.FlattenInput(inputs)
             return self.DenseOutput(x)
     
-class TracePhaseRegressor(keras.Model):
+class TracePhaseRegressorNEW(keras.Model):
     
-    def __init__(self, name="trace_phase_regressor", **kwargs):
+    def __init__(self, name="trace_phase_regressorNEW", **kwargs):
         super(TracePhaseRegressor, self).__init__(name=name, **kwargs)
         self.Conv1D1 = layers.Conv1D(kernel_size=1, filters=300, strides=1, activation='relu', name="phase-regressor-conv1")
         # self.MaxPooling1D1 = layers.MaxPooling1D(pool_size=1, strides=1, name="phase-regressor-maxpool1")
         self.Flatten = layers.Flatten(name="phase-regressor-flatten")
-        self.Dense1 = layers.Dense(512, activation='relu', name="phase-regressor-dense1")
-        self.Dense2 = layers.Dense(256, activation='relu', name="phase-regressor-dense2")
-        self.Dense3 = layers.Dense(128, activation='tanh', name="phase-regressor-dense1")
-        self.Dense4 = layers.Dense(64, activation='tanh', name="phase-regressor-dense1")
+        self.Dense1 = layers.Dense(256, activation='tanh', name="phase-regressor-dense1")
+        self.Dense2 = layers.Dense(124, activation='tanh', name="phase-regressor-dense2")
         self.DenseOutput = layers.Dense(1, activation='linear', name="phase-regressor-output")
         
     def call(self, inputs):
@@ -304,21 +302,17 @@ class TracePhaseRegressor(keras.Model):
         x = self.Flatten(x)
         x = self.Dense1(x)
         x = self.Dense2(x)
-        x = self.Dense3(x)
-        x = self.Dense4(x)
         return self.DenseOutput(x)
        
-class TraceAmplitudeRegressor(keras.Model):
+class TraceAmplitudeRegressorNEW(keras.Model):
     
-    def __init__(self, name="trace_phase_regressor", **kwargs):
+    def __init__(self, name="trace_phase_regressorNEW", **kwargs):
         super(TraceAmplitudeRegressor, self).__init__(name=name, **kwargs)
         self.Conv1D1 = layers.Conv1D(kernel_size=1, filters=300, strides=1, activation='relu', name="amplitude-regressor-conv1")
         # self.MaxPooling1D1 = layers.MaxPooling1D(pool_size=1, strides=1, name="amplitude-regressor-maxpool1")
         self.Flatten = layers.Flatten(name="amplitude-regressor-flatten")
-        self.Dense1 = layers.Dense(512, activation='relu', name="amplitude-regressor-dense1")
-        self.Dense2 = layers.Dense(256, activation='relu', name="amplitude-regressor-dense2")
-        self.Dense3 = layers.Dense(128, activation='tanh', name="amplitude-regressor-dense1")
-        self.Dense4 = layers.Dense(64, activation='tanh', name="amplitude-regressor-dense1")
+        self.Dense1 = layers.Dense(256, activation='tanh', name="amplitude-regressor-dense1")
+        self.Dense2 = layers.Dense(124, activation='tanh', name="amplitude-regressor-dense2")
         self.DenseOutput = layers.Dense(1, activation='linear', name="amplitude-regressor-output")
         
     def call(self, inputs):
@@ -327,13 +321,11 @@ class TraceAmplitudeRegressor(keras.Model):
         x = self.Flatten(x)
         x = self.Dense1(x)
         x = self.Dense2(x)
-        x = self.Dense3(x)
-        x = self.Dense4(x)
         return self.DenseOutput(x)
               
-class TraceClassifierDiscriminatorHead(keras.Model):
+class TraceClassifierDiscriminatorHeadNEW(keras.Model):
     
-    def __init__(self, name="trace_classifier_discriminator_head", **kwargs):
+    def __init__(self, name="trace_classifier_discriminator_headNEW", **kwargs):
         super(TraceClassifierDiscriminatorHead, self).__init__(name=name, **kwargs)
         self.Conv1DTrace = layers.Conv1D(kernel_size=300, filters=300, strides=1, activation='tanh', name="classifier-discriminator-head-conv1-trace")
         # self.MaxPooling1DTrace = layers.MaxPooling1D(pool_size=1, strides=2, name="classifier-discriminator-head-maxpool1-trace")
@@ -372,6 +364,170 @@ class TraceClassifierDiscriminatorHead(keras.Model):
         # x_class = self.MaxPooling1DClass(x_class)
         x_class = self.Conv1DClass(x_class)
         # x_class = self.MaxPooling1DClass(x_class)
+        x_class = self.FlattenClass(x_class)
+        x_class = self.Dense1Class(x_class)
+        x_class = self.ReshapeClass(x_class)
+        
+        x = self.Merge([x_trace, x_class])
+        x = self.Dense1Merged(x)
+        return self.DenseOutput(x)
+    
+class TraceDiscriminatorBase(keras.Model):
+    
+    def __init__(self, name="trace_discriminator_base", **kwargs):
+        super(TraceDiscriminatorBase, self).__init__(name=name, **kwargs)
+        self.Flatten1 = layers.Flatten(input_shape=(1, 300), name="discriminator-base-flatten1")
+        self.ReshapeInput = layers.Reshape((300, 1), name="discriminator-base-reshape1")
+        self.Conv1D1 = layers.Conv1D(kernel_size=300, filters=300, strides=1, activation='tanh', name="discriminator-base-conv1")
+        self.MaxPooling1D1 = layers.MaxPooling1D(pool_size=1, strides=2, name="discriminator-base-maxpool1")
+        self.Conv1D2 = layers.Conv1D(kernel_size=1, filters=300, strides=1, activation='relu', name="discriminator-base-conv2")
+        self.MaxPooling1D2 = layers.MaxPooling1D(pool_size=1, strides=2, name="discriminator-base-maxpool2")
+        self.Flatten = layers.Flatten(name="discriminator-base-flatten")
+        self.Dense1 = layers.Dense(300, activation='relu', name="discriminator-base-dense1")
+        self.ReshapeDense = layers.Reshape((300, 1), name="discriminator-base-reshape2")
+        self.Dense2 = layers.Dense(64, activation='tanh', name="discriminator-base-dense2")
+        self.Conv1DTranspose = layers.Conv1DTranspose(kernel_size=1, filters=2, activation='tanh', name="discriminator-base-conv3")
+        self.ReshapeOutput = layers.Reshape((2, 300), name="discriminator-base-reshape3")
+        self.LSTM = layers.LSTM(300, return_sequences=True, name="discriminator-base-lstm0")
+
+    
+    def call(self, inputs):
+        x = self.Flatten1(inputs)
+        x = self.ReshapeInput(x)
+        x = self.Conv1D1(x)
+        x = self.MaxPooling1D1(x)
+        x = self.Conv1D2(x)
+        x = self.MaxPooling1D2(x)
+        x = self.Flatten(x)
+        x = self.Dense1(x)
+        x = self.ReshapeDense(x)
+        x = self.Dense2(x)
+        x = self.Conv1DTranspose(x)
+        x = self.ReshapeOutput(x)
+        return self.LSTM(x)  
+
+class TraceDiscriminatorHead(keras.Model):
+    
+    def __init__(self, name="trace_discriminator_head", **kwargs):
+        super(TraceDiscriminatorHead, self).__init__(name=name, **kwargs)
+        self.Dense = layers.Dense(150, activation='tanh', name="discriminator-head-dense1", input_shape=(2, 300))
+        self.DenseOutput = layers.Dense(300, activation='linear', name="discriminator-head-output")
+    
+    def call(self, inputs):
+        x = self.Dense(inputs)
+        return self.DenseOutput(x) 
+
+class TraceClassifierBase(keras.Model):
+    
+    def __init__(self, name="trace_classifier_base", **kwargs):
+        super(TraceClassifierBase, self).__init__(name=name, **kwargs)  
+        self.ReshapeInput = layers.Reshape((300, 1), name="classifier-base-reshape1")
+        self.Conv1D1 = layers.Conv1D(kernel_size=300, filters=300, strides=1, activation='relu', name="classifier-base-conv1")
+        self.MaxPooling1D1 = layers.MaxPooling1D(pool_size=1, strides=1, name="classifier-base-maxpool1")
+        self.Flatten = layers.Flatten(name="classifier-base-flatten")
+        self.Dense1 = layers.Dense(256, activation='tanh', name="classifier-base-dense1")
+        self.Dense2 = layers.Dense(300, activation='tanh', name="classifier-base-dense2")
+        self.ReshapeOutput = layers.Reshape((1, 300), name="classifier-base-reshape2")
+        
+    def call(self, inputs):
+        x = self.ReshapeInput(inputs)
+        x = self.Conv1D1(x)
+        x = self.MaxPooling1D1(x)
+        x = self.Flatten(x)
+        x = self.Dense1(x)
+        x = self.Dense2(x)
+        return self.ReshapeOutput(x)
+    
+class TraceClassifierHead(keras.Model):
+        
+        def __init__(self, name="trace_classifier_head", **kwargs):
+            super(TraceClassifierHead, self).__init__(name=name, **kwargs) 
+            self.FlattenInput = layers.Flatten(name="classifier-head-flatten1", input_shape=(1, 300)) 
+            self.DenseOutput = layers.Dense(1, activation='sigmoid', name="classifier-head-output")
+            
+        def call(self, inputs):
+            x = self.FlattenInput(inputs)
+            return self.DenseOutput(x)
+    
+class TracePhaseRegressor(keras.Model):
+    
+    def __init__(self, name="trace_phase_regressor", **kwargs):
+        super(TracePhaseRegressor, self).__init__(name=name, **kwargs)
+        self.Conv1D1 = layers.Conv1D(kernel_size=1, filters=300, strides=1, activation='relu', name="phase-regressor-conv1")
+        self.MaxPooling1D1 = layers.MaxPooling1D(pool_size=1, strides=1, name="phase-regressor-maxpool1")
+        self.Flatten = layers.Flatten(name="phase-regressor-flatten")
+        self.Dense1 = layers.Dense(256, activation='tanh', name="phase-regressor-dense1")
+        self.Dense2 = layers.Dense(124, activation='tanh', name="phase-regressor-dense2")
+        self.DenseOutput = layers.Dense(1, activation='linear', name="phase-regressor-output")
+        
+    def call(self, inputs):
+        x = self.Conv1D1(inputs)
+        x = self.MaxPooling1D1(x)
+        x = self.Flatten(x)
+        x = self.Dense1(x)
+        x = self.Dense2(x)
+        return self.DenseOutput(x)
+       
+class TraceAmplitudeRegressor(keras.Model):
+    
+    def __init__(self, name="trace_phase_regressor", **kwargs):
+        super(TraceAmplitudeRegressor, self).__init__(name=name, **kwargs)
+        self.Conv1D1 = layers.Conv1D(kernel_size=1, filters=300, strides=1, activation='relu', name="amplitude-regressor-conv1")
+        self.MaxPooling1D1 = layers.MaxPooling1D(pool_size=1, strides=1, name="amplitude-regressor-maxpool1")
+        self.Flatten = layers.Flatten(name="amplitude-regressor-flatten")
+        self.Dense1 = layers.Dense(256, activation='tanh', name="amplitude-regressor-dense1")
+        self.Dense2 = layers.Dense(124, activation='tanh', name="amplitude-regressor-dense2")
+        self.DenseOutput = layers.Dense(1, activation='linear', name="amplitude-regressor-output")
+        
+    def call(self, inputs):
+        x = self.Conv1D1(inputs)
+        x = self.MaxPooling1D1(x)
+        x = self.Flatten(x)
+        x = self.Dense1(x)
+        x = self.Dense2(x)
+        return self.DenseOutput(x)
+              
+class TraceClassifierDiscriminatorHead(keras.Model):
+    
+    def __init__(self, name="trace_classifier_discriminator_head", **kwargs):
+        super(TraceClassifierDiscriminatorHead, self).__init__(name=name, **kwargs)
+        self.Conv1DTrace = layers.Conv1D(kernel_size=300, filters=300, strides=1, activation='tanh', name="classifier-discriminator-head-conv1-trace")
+        self.MaxPooling1DTrace = layers.MaxPooling1D(pool_size=1, strides=2, name="classifier-discriminator-head-maxpool1-trace")
+        self.Conv1DTrace = layers.Conv1D(kernel_size=1, filters=300, strides=1, activation='relu', name="classifier-discriminator-head-conv2-trace")
+        self.MaxPooling1DTrace = layers.MaxPooling1D(pool_size=1, strides=2, name="classifier-discriminator-head-maxpool2-trace")
+        
+        self.Conv1DClass = layers.Conv1D(kernel_size=1, filters=300, strides=1, activation='relu', name="classifier-discriminator-head-conv1-class")
+        self.MaxPooling1DClass = layers.MaxPooling1D(pool_size=1, strides=2, name="classifier-discriminator-head-maxpool1-class")
+        self.Conv1DClass = layers.Conv1D(kernel_size=1, filters=300, strides=1, activation='relu', name="classifier-discriminator-head-conv2-class")
+        self.MaxPooling1DClass = layers.MaxPooling1D(pool_size=1, strides=2, name="classifier-discriminator-head-maxpool2-class")
+        
+        self.FlattenTrace = layers.Flatten(name="classifier-discriminator-head-flatten-trace")
+        self.FlattenClass = layers.Flatten(name="classifier-discriminator-head-flatten-class")
+        
+        self.Dense1Trace = layers.Dense(300, activation='tanh', name="classifier-discriminator-head-dense1-trace")
+        self.ReshapeTrace = layers.Reshape((1, 300), name="classifier-discriminator-head-reshape-trace")
+        self.Dense1Class = layers.Dense(300, activation='tanh', name="classifier-discriminator-head-dense1-class")
+        self.ReshapeClass = layers.Reshape((1, 300), name="classifier-discriminator-head-reshape-class")
+        
+        self.Merge = layers.Concatenate(name="classifier-discriminator-head-merge", axis=1)
+        
+        self.Dense1Merged = layers.Dense(300, activation='tanh', name="classifier-discriminator-head-dense1-merged")
+        self.DenseOutput = layers.Dense(300, activation='tanh', name="classifier-discriminator-head-dense2-merged")
+    
+    def call(self, inputs):
+        input_trace, input_classifier = inputs
+        x_trace = self.Conv1DTrace(input_trace)
+        x_trace = self.MaxPooling1DTrace(x_trace)
+        x_trace = self.Conv1DTrace(x_trace)
+        x_trace = self.MaxPooling1DTrace(x_trace)
+        x_trace = self.FlattenTrace(x_trace)
+        x_trace = self.Dense1Trace(x_trace)
+        x_trace = self.ReshapeTrace(x_trace)
+        
+        x_class = self.Conv1DClass(input_classifier)
+        x_class = self.MaxPooling1DClass(x_class)
+        x_class = self.Conv1DClass(x_class)
+        x_class = self.MaxPooling1DClass(x_class)
         x_class = self.FlattenClass(x_class)
         x_class = self.Dense1Class(x_class)
         x_class = self.ReshapeClass(x_class)
