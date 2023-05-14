@@ -292,8 +292,10 @@ class TracePhaseRegressor(keras.Model):
         self.Conv1D1 = layers.Conv1D(kernel_size=1, filters=300, strides=1, activation='relu', name="phase-regressor-conv1")
         # self.MaxPooling1D1 = layers.MaxPooling1D(pool_size=1, strides=1, name="phase-regressor-maxpool1")
         self.Flatten = layers.Flatten(name="phase-regressor-flatten")
-        self.Dense1 = layers.Dense(256, activation='tanh', name="phase-regressor-dense1")
-        self.Dense2 = layers.Dense(124, activation='tanh', name="phase-regressor-dense2")
+        self.Dense1 = layers.Dense(512, activation='relu', name="phase-regressor-dense1")
+        self.Dense2 = layers.Dense(256, activation='relu', name="phase-regressor-dense2")
+        self.Dense3 = layers.Dense(128, activation='tanh', name="phase-regressor-dense1")
+        self.Dense4 = layers.Dense(64, activation='tanh', name="phase-regressor-dense1")
         self.DenseOutput = layers.Dense(1, activation='linear', name="phase-regressor-output")
         
     def call(self, inputs):
@@ -302,6 +304,8 @@ class TracePhaseRegressor(keras.Model):
         x = self.Flatten(x)
         x = self.Dense1(x)
         x = self.Dense2(x)
+        x = self.Dense3(x)
+        x = self.Dense4(x)
         return self.DenseOutput(x)
        
 class TraceAmplitudeRegressor(keras.Model):
@@ -311,8 +315,10 @@ class TraceAmplitudeRegressor(keras.Model):
         self.Conv1D1 = layers.Conv1D(kernel_size=1, filters=300, strides=1, activation='relu', name="amplitude-regressor-conv1")
         # self.MaxPooling1D1 = layers.MaxPooling1D(pool_size=1, strides=1, name="amplitude-regressor-maxpool1")
         self.Flatten = layers.Flatten(name="amplitude-regressor-flatten")
-        self.Dense1 = layers.Dense(256, activation='tanh', name="amplitude-regressor-dense1")
-        self.Dense2 = layers.Dense(124, activation='tanh', name="amplitude-regressor-dense2")
+        self.Dense1 = layers.Dense(512, activation='relu', name="amplitude-regressor-dense1")
+        self.Dense2 = layers.Dense(256, activation='relu', name="amplitude-regressor-dense2")
+        self.Dense3 = layers.Dense(128, activation='tanh', name="amplitude-regressor-dense1")
+        self.Dense4 = layers.Dense(64, activation='tanh', name="amplitude-regressor-dense1")
         self.DenseOutput = layers.Dense(1, activation='linear', name="amplitude-regressor-output")
         
     def call(self, inputs):
@@ -321,6 +327,8 @@ class TraceAmplitudeRegressor(keras.Model):
         x = self.Flatten(x)
         x = self.Dense1(x)
         x = self.Dense2(x)
+        x = self.Dense3(x)
+        x = self.Dense4(x)
         return self.DenseOutput(x)
               
 class TraceClassifierDiscriminatorHead(keras.Model):
